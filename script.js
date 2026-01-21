@@ -302,14 +302,21 @@ class Star {
 /* --- Class ดาวเคราะห์ (วงกลมสีๆ) --- */
 class Planet {
     constructor() { this.reset(); }
+    
     reset() {
         this.x = (Math.random() - 0.5) * w * 2;
         this.y = (Math.random() - 0.5) * h * 2;
         this.z = w + Math.random() * w; 
         this.size = Math.random() * 30 + 10; 
+        
         const colors = ["#ff6b6b", "#4ecdc4", "#ffe66d", "#1a535c", "#f7fff7", "#ff9ff3", "#feca57"];
         this.color = colors[Math.floor(Math.random() * colors.length)];
+        
+        // 🪐 เพิ่มโอกาส 30% ที่จะเป็นดาวเสาร์ (มีวงแหวน)
+        this.hasRing = Math.random() > 0.7; 
+        this.ringAngle = Math.random() * Math.PI; // องศาการเอียงของวงแหวน
     }
+    
     update() {
         this.z -= isWarping ? 60 : 1.5; 
         if (this.z < 1) {
@@ -317,16 +324,33 @@ class Planet {
             this.z = w + 500; 
         }
     }
+    
     draw() {
         let sx = (this.x / this.z) * w + w / 2;
         let sy = (this.y / this.z) * h + h / 2;
         let r = (1 - this.z / w) * this.size;
         if (r < 0) r = 0; 
         
+        // ถ้ามีวงแหวน ให้วาดวงแหวนก่อน (อยู่ข้างหลัง)
+        if (this.hasRing) {
+            ctx.save();
+            ctx.translate(sx, sy);
+            ctx.rotate(this.ringAngle);
+            ctx.beginPath();
+            // วาดวงรี (Ellipse) ทำเป็นวงแหวน
+            ctx.ellipse(0, 0, r * 2.2, r * 0.6, 0, 0, Math.PI * 2);
+            ctx.strokeStyle = this.color;
+            ctx.lineWidth = r * 0.4; // ความหนาของวงแหวน
+            ctx.globalAlpha = isWarping ? 0.5 : 0.3; 
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        // วาดตัวดาว
         ctx.beginPath();
         ctx.arc(sx, sy, r, 0, Math.PI * 2);
         ctx.fillStyle = this.color;
-        ctx.globalAlpha = isWarping ? 0.8 : 0.4; 
+        ctx.globalAlpha = isWarping ? 0.8 : 1.0; 
         ctx.fill();
         ctx.globalAlpha = 1.0; 
     }
@@ -335,8 +359,8 @@ class Planet {
 /* --- สร้างดาวและเริ่ม Animate --- */
 stars = [];
 planets = []; 
-for(let i=0; i<3000; i++) stars.push(new Star());
-for(let i=0; i<15; i++) planets.push(new Planet()); 
+for(let i=0; i<4000; i++) stars.push(new Star());
+for(let i=0; i<25; i++) planets.push(new Planet()); 
 
 function animate() {
     ctx.fillStyle = "#0c0c10"; 
