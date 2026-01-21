@@ -193,7 +193,7 @@ function toggleHistory() {
             });
             tabsHtml += `</div>`;
             contentHtml += `</div>`;
-
+            const footerHtml = "";
             list.innerHTML = tabsHtml + contentHtml + footerHtml;
             initDragScroll();
         }
@@ -288,4 +288,5 @@ function saveToSheet(winners, rankName) {
         console.log("Sent to sheet successfully!");
     }).catch(err => console.error("Error sending to sheet:", err));
 }
+
 animate();
