@@ -72,10 +72,10 @@ function updateUI() {
 /* --- 3. Animation Logic (Meteor) --- */
 function startWish() {
 
-    const currentPrizeName = prizes[currentTier].name;
+       const currentPrizeName = prizes[currentTier].name;
     if (winnersHistory[currentPrizeName] && winnersHistory[currentPrizeName].length > 0) {
-    alert("⛔ รางวัลรอบนี้สุ่มไปแล้วครับ!\nกรุณากดปุ่มเพื่อไป Rank ถัดไป");
-    return; // สั่งหยุดทำงานทันที ไม่ให้สุ่มซ้ำ
+        alert("⛔ รางวัลรอบนี้สุ่มไปแล้วครับ!\nกรุณากดปุ่มเพื่อไป Rank ถัดไป");
+        return; // สั่งหยุดทำงานทันที ไม่ให้สุ่มซ้ำ
     }
 
     if(participants.length === 0) return alert("รายชื่อหมดแล้ว!");
@@ -186,7 +186,7 @@ function toggleHistory() {
         const activePrizes = prizes.filter(p => winnersHistory[p.name] && winnersHistory[p.name].length > 0);
 
         if (activePrizes.length === 0) {
-             list.innerHTML = `<p style="text-align:center; color:#888; margin-top:50px; font-size: 16px;">ยังไม่มีการจับรางวัล</p>`;
+            list.innerHTML = `<p style="text-align:center; color:#888; margin-top:50px;">ยังไม่มีการจับรางวัล</p>`;
         } else {
             let tabsHtml = `<div class="history-tabs" id="tabsContainer">`;
             let contentHtml = `<div class="history-content-wrapper">`;
@@ -216,6 +216,14 @@ function toggleHistory() {
 
             tabsHtml += `</div>`;
             contentHtml += `</div>`;
+
+               const downloadBtn = `
+                  <div style="text-align:center; margin-top:20px; padding-bottom:20px;">
+                      <button onclick="downloadCSV()" style="background:#28a745; color:white; border:none; padding:10px 20px; border-radius:30px; cursor:pointer; font-weight:bold; font-size:16px;">
+                        📥 ดาวน์โหลดรายชื่อ (Excel/CSV)
+                      </button>
+                 </div>
+             `;
 
             list.innerHTML = tabsHtml + contentHtml;
 
@@ -346,8 +354,8 @@ class Planet {
     }
 }
 
-for(let i=0; i<5000; i++) stars.push(new Star());       //ปรับปริมาณดาว
-for(let i=0; i<10; i++) planets.push(new Planet());     //ปรับปริมาณดาวเคราะ
+for(let i=0; i<1000; i++) stars.push(new Star());
+for(let i=0; i<8; i++) planets.push(new Planet());
 
 function animate() {
     ctx.fillStyle = isWarping ? "rgba(0,0,0,0.3)" : "#0c0c10";
@@ -357,6 +365,31 @@ function animate() {
     requestAnimationFrame(animate);
 }
 
+/* --- 5. Export Data System (เพิ่มใหม่) --- */
+function downloadCSV() {
+    let csvContent = "\uFEFF"; // กันภาษาไทยเพี้ยน
+    csvContent += "Rank,ID,Name,Department\n"; // หัวตาราง
+
+    // ดึงข้อมูลจากประวัติผู้ชนะ
+    for (const [rankName, winners] of Object.entries(winnersHistory)) {
+        winners.forEach(w => {
+            const id = w[headers[0]] || "-";
+            const name = w[headers[1]] || "-";
+            const dept = w[headers[2]] || "-";
+            // จัดรูปแบบบรรทัด: Rank, ID, Name, Dept
+            csvContent += `"${rankName}","${id}","${name}","${dept}"\n`;
+        });
+    }
+
+    // สร้างไฟล์ดาวน์โหลด
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", "winners_list.csv"); // ชื่อไฟล์ที่จะได้
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
 animate();
-
-
