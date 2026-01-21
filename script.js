@@ -176,10 +176,12 @@ function resetGame() {
 }
 
 /* --- 🔥 Functions สำหรับ History Modal --- */
+/* --- 🔥 Functions สำหรับ History Modal --- */
 function toggleHistory() {
     const modal = document.getElementById('historyModal');
     const list = document.getElementById('historyList');
-    const sheetUrl = document.getElementById('sheetUrl').value.trim(); // ดึงลิงก์ต้นฉบับมา
+    const sheetInput = document.getElementById('sheetUrl');
+    const sheetUrl = sheetInput ? sheetInput.value.trim() : ""; 
 
     if (modal.style.display === 'flex') {
         modal.style.display = 'none';
@@ -202,81 +204,65 @@ function toggleHistory() {
                     </button>
                 `;
 
+                // --- แก้ไขจุดที่พิมพ์เกินตรงนี้ ---
                 contentHtml += `
-			<div id="tab-${index}" class="tab-content ${isActive}">`;
-
-			 	<div style="text-align:right; margin-bottom:10px;">
-                            	<button onclick="copyToClipboard('${prize.name}')" style="background:#4a90e2; color:white; border:none; padding:5px 15px; border-radius:5px; cursor:pointer; font-size:14px;">
-                                	📋 ก๊อปปี้รายชื่อ ${prize.name}
-                            	</button>
-                        	</div>
+                    <div id="tab-${index}" class="tab-content ${isActive}">
+                        <div style="text-align:right; margin-bottom:10px;">
+                            <button onclick="copyToClipboard('${prize.name}')" style="background:#4a90e2; color:white; border:none; padding:8px 15px; border-radius:5px; cursor:pointer; font-size:14px; font-weight:bold;">
+                                📋 ก๊อปปี้รายชื่อ ${prize.name}
+                            </button>
+                        </div>
                 `;
-
+                
                 winners.forEach(w => {
-                    // headers[1] = ชื่อ (Column B)
-                    // headers[2] = สังกัด (Column C) *ถ้าไม่มีจะขึ้นว่า -
                     const name = w[headers[1]] || "ไม่ระบุชื่อ";
                     const dept = w[headers[2]] || "-"; 
-
-                    // จัดรูปแบบ: เอาชื่อขึ้นก่อน แล้วเอาสังกัดไปใส่ใน <span> ฝั่งขวา
                     contentHtml += `<div class="history-item">${name} <span>${dept}</span></div>`;
                 });
-                contentHtml += `</div>`;
+                contentHtml += `</div>`; // ปิด tab-content
             });
 
             tabsHtml += `</div>`;
             contentHtml += `</div>`;
 
-        			 	const footerHtml = `
-                	<div style="text-align:center; margin-top:20px; padding:20px; border-top:1px solid #444;">
-                    	<a href="${sheetUrl.split('/pub')[0]}" target="_blank" style="color:#ffd700; text-decoration:none; margin-bottom:15px; display:inline-block; font-size:14px;">
-                        	🔗 เปิดหน้า Google Sheet เพื่อไปวางข้อมูล
-                    	</a>
+            const footerHtml = `
+                <div style="text-align:center; margin-top:20px; padding:20px; border-top:1px solid #444;">
+                    <a href="${sheetUrl.replace('/pub?output=csv', '')}" target="_blank" style="color:#ffd700; text-decoration:none; font-weight:bold; font-size:14px;">
+                        🔗 เปิดหน้า Google Sheet เพื่อไปวางข้อมูล
+                    </a>
                 </div>
             `;
 
             list.innerHTML = tabsHtml + contentHtml + footerHtml;
 
-            // --- ส่วนระบบ Click & Drag เหมือนเดิม ---
+            // --- ระบบ Click & Drag ---
             const slider = document.getElementById('tabsContainer');
-            let isDown = false;
-            let startX;
-            let scrollLeft;
-            let isDragging = false;
-
+            let isDown = false; let startX; let scrollLeft;
             slider.addEventListener('mousedown', (e) => {
                 isDown = true;
-                isDragging = false;
                 startX = e.pageX - slider.offsetLeft;
                 scrollLeft = slider.scrollLeft;
             });
-            slider.addEventListener('mouseleave', () => { isDown = false; 		     		        slider.classList.remove('dragging'); });
-            slider.addEventListener('mouseup', () => {
-                isDown = false;
-                setTimeout(() => { slider.classList.remove('dragging'); }, 50);
-            });
+            slider.addEventListener('mouseleave', () => { isDown = false; });
+            slider.addEventListener('mouseup', () => { isDown = false; });
             slider.addEventListener('mousemove', (e) => {
                 if (!isDown) return;
                 e.preventDefault();
                 const x = e.pageX - slider.offsetLeft;
                 const walk = (x - startX) * 2;
-                if (Math.abs(x - startX) > 5) {
-                    isDragging = true;
-                    slider.classList.add('dragging');
-                    slider.scrollLeft = scrollLeft - walk;
-                }
+                slider.scrollLeft = scrollLeft - walk;
             });
         }
         modal.style.display = 'flex';
     }
 }
 
-// ฟังก์ชันสลับแท็บ (เหมือนเดิม ไม่ต้องแก้)
+// ฟังก์ชันสลับแท็บ
 window.switchTab = function(event, tabId) {														
-    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));			// 1. เอาสถานะ Active ออกจากทุกปุ่ม
-    event.currentTarget.classList.add('active');												// 2. ใส่ Active ให้ปุ่มที่กด
-    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));		// 3. ซ่อนเนื้อหาทั้งหมด
-    document.getElementById(tabId).classList.add('active');										// 4. โชว์เนื้อหาของแท็บที่เลือก
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    event.currentTarget.classList.add('active');
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    document.getElementById(tabId).classList.add('active');
 }
 
 /* =========================================
@@ -291,7 +277,6 @@ let planets = [];
 function resize() { w = canvas.width = window.innerWidth; h = canvas.height = window.innerHeight; }
 window.addEventListener('resize', resize); resize();
 
-// Class: Star
 class Star {
     constructor() { this.reset(); }
     reset() {
@@ -317,7 +302,6 @@ class Star {
     }
 }
 
-// Class: Planet
 class Planet {
     constructor() { this.reset(); }
     reset() {
@@ -325,7 +309,6 @@ class Planet {
         this.y = (Math.random() - 0.5) * h * 4;
         this.z = Math.random() * w * 3 + w; 
         this.size = Math.random() * 30 + 10; 
-        
         const colors = ["#4a6b8a", "#d4a76a", "#8a4a4a", "#555555", "#bfa3cc"];
         this.color = colors[Math.floor(Math.random() * colors.length)];
         this.hasRing = Math.random() > 0.6;
@@ -341,31 +324,19 @@ class Planet {
         let sy = (this.y / this.z) * h + h / 2;
         let projectedSize = (1 - this.z / (w * 4)) * this.size;
         if (projectedSize < 0) projectedSize = 0;
-
         if (this.hasRing) {
-            ctx.save();
-            ctx.translate(sx, sy);
-            ctx.rotate(this.ringAngle);
-            ctx.beginPath();
-            ctx.ellipse(0, 0, projectedSize * 2.2, projectedSize * 0.6, 0, 0, Math.PI * 2);
-            ctx.strokeStyle = "rgba(255, 255, 255, 0.4)";
-            ctx.lineWidth = projectedSize * 0.4;
-            ctx.stroke();
-            ctx.restore();
+            ctx.save(); ctx.translate(sx, sy); ctx.rotate(this.ringAngle);
+            ctx.beginPath(); ctx.ellipse(0, 0, projectedSize * 2.2, projectedSize * 0.6, 0, 0, Math.PI * 2);
+            ctx.strokeStyle = "rgba(255, 255, 255, 0.4)"; ctx.lineWidth = projectedSize * 0.4; ctx.stroke(); ctx.restore();
         }
-
-        ctx.beginPath();
-        ctx.arc(sx, sy, projectedSize, 0, Math.PI * 2);
-        ctx.fillStyle = this.color;
-        ctx.shadowBlur = 20;
-        ctx.shadowColor = this.color;
-        ctx.fill();
-        ctx.shadowBlur = 0;
+        ctx.beginPath(); ctx.arc(sx, sy, projectedSize, 0, Math.PI * 2);
+        ctx.fillStyle = this.color; ctx.shadowBlur = 20; ctx.shadowColor = this.color;
+        ctx.fill(); ctx.shadowBlur = 0;
     }
 }
 
-for(let i=0; i<1000; i++) stars.push(new Star());
-for(let i=0; i<8; i++) planets.push(new Planet());
+for(let i=0; i<3000; i++) stars.push(new Star()); // เพิ่มดาวเป็น 3000
+for(let i=0; i<20; i++) planets.push(new Planet());
 
 function animate() {
     ctx.fillStyle = isWarping ? "rgba(0,0,0,0.3)" : "#0c0c10";
@@ -375,12 +346,11 @@ function animate() {
     requestAnimationFrame(animate);
 }
 
-/* --- 5. Export Data System (เพิ่มใหม่) --- */
+/* --- 5. Export Data System --- */
 function copyToClipboard(rankName) {
     const winners = winnersHistory[rankName];
-    if (!winners) return;
+    if (!winners || winners.length === 0) return;
 
-    // สร้างข้อความรูปแบบตาราง (ID \t Name \t Dept) เพื่อให้วางใน Excel/Sheet แล้วแยกคอลัมน์ให้อัตโนมัติ
     let textToCopy = "ID\tName\tDepartment\n"; 
     winners.forEach(w => {
         const id = w[headers[0]] || "-";
@@ -390,8 +360,10 @@ function copyToClipboard(rankName) {
     });
 
     navigator.clipboard.writeText(textToCopy).then(() => {
-        alert(`คัดลอกรายชื่อ ${rankName} เรียบร้อยแล้ว!\nคุณสามารถไปกดวาง (Ctrl+V) ใน Google Sheet ได้เลย`);
+        alert(`คัดลอกรายชื่อ ${rankName} จำนวน ${winners.length} คนเรียบร้อยแล้ว!\nนำไปวางใน Google Sheet ได้เลย`);
     }).catch(err => {
-        console.error('Copy failed', err);
+        alert('คัดลอกไม่สำเร็จ กรุณาลองใหม่อีกครั้ง');
     });
-}animate();
+}
+
+animate();
