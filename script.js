@@ -194,11 +194,6 @@ function toggleHistory() {
             tabsHtml += `</div>`;
             contentHtml += `</div>`;
 
-            const footerHtml = `
-                <div style="text-align:center; margin-top:20px; padding:20px; border-top:1px solid #444;">
-                    <a href="${sheetUrl.replace('/pub?output=csv', '')}" target="_blank" style="color:#ffd700; text-decoration:none; font-weight:bold; font-size:14px;">🔗 เปิดหน้า Google Sheet เพื่อไปวางข้อมูล</a>
-                </div>
-            `;
             list.innerHTML = tabsHtml + contentHtml + footerHtml;
             initDragScroll();
         }
