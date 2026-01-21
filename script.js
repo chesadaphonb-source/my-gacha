@@ -179,7 +179,8 @@ function resetGame() {
 function toggleHistory() {
     const modal = document.getElementById('historyModal');
     const list = document.getElementById('historyList');
-    
+    const sheetUrl = document.getElementById('sheetUrl').value.trim(); // ดึงลิงก์ต้นฉบับมา
+
     if (modal.style.display === 'flex') {
         modal.style.display = 'none';
     } else {
@@ -201,7 +202,16 @@ function toggleHistory() {
                     </button>
                 `;
 
-                contentHtml += `<div id="tab-${index}" class="tab-content ${isActive}">`;
+                contentHtml += `
+			<div id="tab-${index}" class="tab-content ${isActive}">`;
+
+			 	<div style="text-align:right; margin-bottom:10px;">
+                            	<button onclick="copyToClipboard('${prize.name}')" style="background:#4a90e2; color:white; border:none; padding:5px 15px; border-radius:5px; cursor:pointer; font-size:14px;">
+                                	📋 ก๊อปปี้รายชื่อ ${prize.name}
+                            	</button>
+                        	</div>
+                `;
+
                 winners.forEach(w => {
                     // headers[1] = ชื่อ (Column B)
                     // headers[2] = สังกัด (Column C) *ถ้าไม่มีจะขึ้นว่า -
@@ -217,15 +227,15 @@ function toggleHistory() {
             tabsHtml += `</div>`;
             contentHtml += `</div>`;
 
-               const downloadBtn = `
-                  <div style="text-align:center; margin-top:20px; padding-bottom:20px;">
-                      <button onclick="downloadCSV()" style="background:#28a745; color:white; border:none; padding:10px 20px; border-radius:30px; cursor:pointer; font-weight:bold; font-size:16px;">
-                        📥 ดาวน์โหลดรายชื่อ (Excel/CSV)
-                      </button>
-                 </div>
-             `;
+        			 	const footerHtml = `
+                	<div style="text-align:center; margin-top:20px; padding:20px; border-top:1px solid #444;">
+                    	<a href="${sheetUrl.split('/pub')[0]}" target="_blank" style="color:#ffd700; text-decoration:none; margin-bottom:15px; display:inline-block; font-size:14px;">
+                        	🔗 เปิดหน้า Google Sheet เพื่อไปวางข้อมูล
+                    	</a>
+                </div>
+            `;
 
-            list.innerHTML = tabsHtml + contentHtml + downloadBtn;
+            list.innerHTML = tabsHtml + contentHtml + footerHtml;
 
             // --- ส่วนระบบ Click & Drag เหมือนเดิม ---
             const slider = document.getElementById('tabsContainer');
@@ -240,7 +250,7 @@ function toggleHistory() {
                 startX = e.pageX - slider.offsetLeft;
                 scrollLeft = slider.scrollLeft;
             });
-            slider.addEventListener('mouseleave', () => { isDown = false; slider.classList.remove('dragging'); });
+            slider.addEventListener('mouseleave', () => { isDown = false; 		     		        slider.classList.remove('dragging'); });
             slider.addEventListener('mouseup', () => {
                 isDown = false;
                 setTimeout(() => { slider.classList.remove('dragging'); }, 50);
@@ -354,8 +364,8 @@ class Planet {
     }
 }
 
-for(let i=0; i<3000; i++) stars.push(new Star());
-for(let i=0; i<20; i++) planets.push(new Planet());
+for(let i=0; i<1000; i++) stars.push(new Star());
+for(let i=0; i<8; i++) planets.push(new Planet());
 
 function animate() {
     ctx.fillStyle = isWarping ? "rgba(0,0,0,0.3)" : "#0c0c10";
@@ -366,32 +376,22 @@ function animate() {
 }
 
 /* --- 5. Export Data System (เพิ่มใหม่) --- */
-function downloadCSV() {
-    let csvContent = "\uFEFF"; // กันภาษาไทยเพี้ยน
-    csvContent += "Rank,ID,Name,Department\n"; // หัวตาราง
+function copyToClipboard(rankName) {
+    const winners = winnersHistory[rankName];
+    if (!winners) return;
 
-    // ดึงข้อมูลจากประวัติผู้ชนะ
-    for (const [rankName, winners] of Object.entries(winnersHistory)) {
-        winners.forEach(w => {
-            const id = w[headers[0]] || "-";
-            const name = w[headers[1]] || "-";
-            const dept = w[headers[2]] || "-";
-            // จัดรูปแบบบรรทัด: Rank, ID, Name, Dept
-            csvContent += `"${rankName}","${id}","${name}","${dept}"\n`;
-        });
-    }
+    // สร้างข้อความรูปแบบตาราง (ID \t Name \t Dept) เพื่อให้วางใน Excel/Sheet แล้วแยกคอลัมน์ให้อัตโนมัติ
+    let textToCopy = "ID\tName\tDepartment\n"; 
+    winners.forEach(w => {
+        const id = w[headers[0]] || "-";
+        const name = w[headers[1]] || "-";
+        const dept = w[headers[2]] || "-";
+        textToCopy += `${id}\t${name}\t${dept}\n`;
+    });
 
-    // สร้างไฟล์ดาวน์โหลด
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement("a");
-    const url = URL.createObjectURL(blob);
-    link.setAttribute("href", url);
-    link.setAttribute("download", "winners_list.csv"); // ชื่อไฟล์ที่จะได้
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-}
-
-animate();
-
+    navigator.clipboard.writeText(textToCopy).then(() => {
+        alert(`คัดลอกรายชื่อ ${rankName} เรียบร้อยแล้ว!\nคุณสามารถไปกดวาง (Ctrl+V) ใน Google Sheet ได้เลย`);
+    }).catch(err => {
+        console.error('Copy failed', err);
+    });
+}animate();
