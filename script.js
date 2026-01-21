@@ -71,6 +71,13 @@ function updateUI() {
 
 /* --- 3. Animation Logic (Meteor) --- */
 function startWish() {
+
+       const currentPrizeName = prizes[currentTier].name;
+    if (winnersHistory[currentPrizeName] && winnersHistory[currentPrizeName].length > 0) {
+        alert("⛔ รางวัลรอบนี้สุ่มไปแล้วครับ!\nกรุณากดปุ่มเพื่อไป Rank ถัดไป");
+        return; // สั่งหยุดทำงานทันที ไม่ให้สุ่มซ้ำ
+    }
+
     if(participants.length === 0) return alert("รายชื่อหมดแล้ว!");
     
     const tier = prizes[currentTier];
