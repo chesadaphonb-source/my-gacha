@@ -317,3 +317,28 @@ input[type="text"]:focus {
     max-width: 50%;
     word-break: break-word;
 }
+
+/* --- แก้ไขการแสดงผลบนมือถือ (Mobile Fixes) --- */
+@media screen and (max-width: 768px) {
+    /* 1. ปรับปุ่ม History ให้เล็กลงและชิดขอบมากขึ้น */
+    .btn-history-toggle {
+        top: 10px !important;
+        right: 10px !important;
+        padding: 6px 12px !important;
+        font-size: 12px !important;
+        z-index: 1000;
+    }
+
+    /* 2. ดันชื่อรางวัล (Rank) ลงมาข้างล่าง ไม่ให้ชนปุ่ม */
+    #bannerDisplay {
+        margin-top: 40px !important; /* เว้นที่ว่างด้านบนให้ปุ่ม */
+        padding-top: 10px;
+    }
+
+    /* 3. ปรับขนาดตัวหนังสือชื่อรางวัลให้พอดีจอ ไม่ล้น */
+    #bannerDisplay h1 {
+        font-size: 24px !important; /* ลดขนาดฟอนต์ลง */
+        line-height: 1.2;
+        padding: 0 10px; /* กันชนขอบจอซ้ายขวา */
+    }
+}
