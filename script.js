@@ -64,7 +64,11 @@ onValue(gameRef, (snapshot) => {
         currentTier = data.currentTier || 0;
 
         // 🔥🔥🔥 เพิ่มบรรทัดนี้: ถ้าไม่มีคน (คือยังไม่ได้ Load Data) ให้หยุดทำงานทันที กัน Error
-        if (participants.length === 0 && !isAdmin) return;
+       if (!participants || participants.length === 0) {
+             document.getElementById('setupContainer').style.display = 'block';
+             document.getElementById('mainScreen').style.display = 'none';
+             return; // หยุดทำงานแค่นี้ ไม่ต้องไปทำ Animation ต่อ
+        }
 
         // ถ้าตั้งค่าเสร็จแล้ว ให้เปลี่ยนหน้า
         if (data.isSetupDone) {
@@ -534,5 +538,6 @@ function saveToSheet(winners, rankName) {
 }
 
 animate();
+
 
 
