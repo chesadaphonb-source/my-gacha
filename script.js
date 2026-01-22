@@ -33,11 +33,11 @@ window.closeResult = closeResult;
 
 // --- Configuration & Global Variables (ต้องประกาศก่อน onValue) ---
 const prizes = [
-    { name: "Rank 5 (General)", count: 50, color: "#65a5f0" },
-    { name: "Rank 4 (Rare)", count: 30, color: "#d376f0" },
-    { name: "Rank 3 (Epic)", count: 15, color: "#d376f0" },
-    { name: "Rank 2 (Vice)", count: 5, color: "#ffd700" },
-    { name: "Rank 1 (Grand)", count: 3, color: "#ffd700" }
+    { name: "รางวัลที่ 5 (20 บาท)", count: 50, color: "#33CC00" },
+    { name: "รางวัลที่ 4 (50 บาท)", count: 30, color: "#99CCFF" },
+    { name: "รางวัลที่ 3 (100 บาท)", count: 15, color: "#FF9999" },
+    { name: "รางวัลที่ 2 (500 บาท)", count: 5, color: "#CC33FF" },
+    { name: "รางวัลที่ 1 (1000 บาท)", count: 3, color: "#FFD700" }
 ];
 
 let participants = [];
@@ -538,6 +538,7 @@ function saveToSheet(winners, rankName) {
 }
 
 animate();
+
 
 
 
