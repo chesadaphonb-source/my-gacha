@@ -530,5 +530,7 @@ window.resetGame = resetGame;
 window.toggleHistory = toggleHistory;
 window.copyToClipboard = copyToClipboard;
 window.filterHistory = filterHistory;
+window.closeResult = closeResult;
 
 // window.switchTab มีเขียนไว้ในโค้ดแล้ว ไม่ต้องใส่ซ้ำ
+
