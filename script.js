@@ -604,15 +604,20 @@ document.addEventListener('DOMContentLoaded', () => {
         // 👑 ถ้าเป็น Admin: โชว์ปุ่ม Start, ซ่อน Waiting
         if(btnStart) btnStart.style.display = 'inline-block';
         if(msgWaiting) msgWaiting.style.display = 'none';
+        if(controlBar) controlBar.style.display = 'flex'; // แอดมินต้องเห็นปุ่ม
         console.log("Mode: Admin");
     } else {
         // 👤 ถ้าเป็นคนดู: ซ่อนปุ่ม Start, โชว์ Waiting
         if(btnStart) btnStart.style.display = 'none';
         if(msgWaiting) msgWaiting.style.display = 'flex';
+       // 👇 ซ่อนแถบควบคุมด้านล่างสำหรับคนดู
+        if(controlBar) controlBar.style.display = 'none';
         console.log("Mode: Viewer");
+       
+       animate();
     }
 });
-animate();
+
 
 
 
