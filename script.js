@@ -613,10 +613,10 @@ document.addEventListener('DOMContentLoaded', () => {
        // 👇 ซ่อนแถบควบคุมด้านล่างสำหรับคนดู
         if(controlBar) controlBar.style.display = 'none';
         console.log("Mode: Viewer");
-       
-       animate();
     }
+    animate();
 });
+
 
 
 
