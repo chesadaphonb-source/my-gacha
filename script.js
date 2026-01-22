@@ -537,7 +537,14 @@ function saveToSheet(winners, rankName) {
     }).catch(err => console.error("Error sending to sheet:", err));
 }
 
+function clearCache() {
+  if(!confirm("จะล้างแคชเพื่ออัปเดตข้อมูลใช่ไหม?")) return;
+  // เทคนิคหลอก Browser ว่าเป็นเว็บใหม่ด้วยการเติมเลขสุ่ม
+  window.location.href = window.location.pathname + '?v=' + new Date().getTime();
+}
+
 animate();
+
 
 
 
