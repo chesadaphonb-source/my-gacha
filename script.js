@@ -21,6 +21,16 @@ const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 const gameRef = ref(db, 'gacha_room_v1');
 
+// --- 6. Expose Functions to Window (สำคัญมาก! เพื่อให้ปุ่ม HTML กดติด) ---
+window.loadData = loadData;
+window.startWish = startWish;
+window.nextRound = nextRound;
+window.resetGame = resetGame;
+window.toggleHistory = toggleHistory;
+window.copyToClipboard = copyToClipboard;
+window.filterHistory = filterHistory;
+window.closeResult = closeResult;
+
 // --- Configuration & Global Variables (ต้องประกาศก่อน onValue) ---
 const prizes = [
     { name: "Rank 5 (General)", count: 50, color: "#65a5f0" },
@@ -52,6 +62,9 @@ onValue(gameRef, (snapshot) => {
         participants = data.participants || [];
         winnersHistory = data.history || {};
         currentTier = data.currentTier || 0;
+
+        // 🔥🔥🔥 เพิ่มบรรทัดนี้: ถ้าไม่มีคน (คือยังไม่ได้ Load Data) ให้หยุดทำงานทันที กัน Error
+        if (participants.length === 0 && !isAdmin) return;
 
         // ถ้าตั้งค่าเสร็จแล้ว ให้เปลี่ยนหน้า
         if (data.isSetupDone) {
@@ -522,15 +535,4 @@ function saveToSheet(winners, rankName) {
 
 animate();
 
-// --- 6. Expose Functions to Window (สำคัญมาก! เพื่อให้ปุ่ม HTML กดติด) ---
-window.loadData = loadData;
-window.startWish = startWish;
-window.nextRound = nextRound;
-window.resetGame = resetGame;
-window.toggleHistory = toggleHistory;
-window.copyToClipboard = copyToClipboard;
-window.filterHistory = filterHistory;
-window.closeResult = closeResult;
-
-// window.switchTab มีเขียนไว้ในโค้ดแล้ว ไม่ต้องใส่ซ้ำ
 
