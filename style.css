@@ -371,21 +371,23 @@ input[type="text"]:focus {
    ========================================= */
 .btn-clear-cache {
     position: fixed;
-    z-index: 1000;
+    z-index: 999; /* ให้น้อยกว่า History นิดนึง */
     cursor: pointer;
     border: none;
-    background: #ff4757; /* สีแดง */
+    background: rgba(255, 71, 87, 0.9); /* สีแดงโปร่งแสงนิดๆ ดูหรู */
     color: white;
-    border-radius: 30px;
+    border-radius: 20px;
     font-family: 'Kanit', sans-serif;
-    box-shadow: 0 4px 15px rgba(255, 71, 87, 0.4);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
     transition: all 0.3s ease;
 
-    /* ตำแหน่งในจอคอม (PC) */
-    top: 80px;  /* อยู่ต่ำกว่าปุ่ม History ลงมา */
-    right: 20px;
-    padding: 8px 16px;
+    /* 🖥️ ตำแหน่งใน PC: อยู่ใต้ปุ่ม History (ซึ่งมักจะอยู่ที่ Top 20-30px) */
+    top: 85px;  
+    right: 25px; 
+    
+    padding: 6px 15px;
     font-size: 14px;
+    display: block; /* เริ่มต้นให้โชว์ก่อน */
 }
 
 .btn-clear-cache:hover {
@@ -393,15 +395,14 @@ input[type="text"]:focus {
     background: #ff6b81;
 }
 
-/* =========================================
-   ปรับตำแหน่งในมือถือ (Mobile)
-   ========================================= */
+/* 📱 ตำแหน่งในมือถือ */
 @media screen and (max-width: 768px) {
     .btn-clear-cache {
-        /* ปรับให้เล็กและขยับขึ้นไปชิด History มากขึ้น */
-        top: 50px !important; 
+        /* ขยับให้ชิดปุ่ม History ในมือถือ */
+        top: 55px !important; 
         right: 10px !important;
         padding: 4px 10px !important;
-        font-size: 10px !important;
+        font-size: 11px !important;
     }
 }
+
