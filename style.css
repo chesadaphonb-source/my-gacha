@@ -12,7 +12,7 @@ body {
     font-family: 'Kanit', sans-serif;
     background-color: var(--bg-dark);
     color: #fff;
-    overflow: hidden;
+    overflow: hidden; /* ห้ามสกรอลล์ที่ Body */
     height: 100vh;
     display: flex;
     justify-content: center;
@@ -75,6 +75,11 @@ input[type="text"] {
     width: 80%; padding: 15px; border-radius: 10px; border: 1px solid #555;
     background: rgba(0,0,0,0.5); color: white; text-align: center; font-size: 16px;
     margin-bottom: 20px;
+    outline: none; /* ลบเส้นขอบเวลาคลิก */
+}
+input[type="text"]:focus {
+    border-color: var(--gold);
+    background: rgba(0,0,0,0.8);
 }
 
 .btn-wish {
@@ -104,18 +109,19 @@ input[type="text"] {
 
 .result-content {
     flex: 1 1 auto; overflow-y: auto;
-    padding: 10px 20px 100px 20px;
+    padding: 10px 20px 100px 20px; /* Padding ล่างเยอะหน่อยกันปุ่มบัง */
     -webkit-overflow-scrolling: touch;
 }
 
 .result-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); 
+    /* ปรับเป็น 140px เพื่อให้จอมือถือเล็กๆ (320px+) แสดง 2 แถวได้ */
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); 
     gap: 15px;
     max-width: 1200px; margin: 0 auto;
 }
 
-/* --- Card Styles (รองรับข้อความยาว) --- */
+/* --- Card Styles --- */
 .card {
     background: linear-gradient(135deg, #2a2a35 0%, #1c1c22 100%);
     border-radius: 10px; overflow: hidden;
@@ -159,19 +165,20 @@ input[type="text"] {
 .btn-history-toggle {
     position: fixed; 
     top: 20px; 
-    right: 20px; /* เปลี่ยนจาก right เป็น left */
-    background: rgba(255, 255, 255, 0.1); /* พื้นหลังจางๆ */
+    right: 20px; 
+    background: rgba(255, 255, 255, 0.1);
     color: #ffd700; 
     border: 2px solid #ffd700;
     padding: 12px 25px; 
     border-radius: 50px;
     cursor: pointer; 
-    z-index: 9999; /* ให้มั่นใจว่าอยู่บนสุดแน่นอน */
+    z-index: 1000; /* ✅ ลดลงจาก 9999 ให้ต่ำกว่า Modal (2000) ไม่งั้นปุ่มจะลอยบัง */
     font-family: 'Kanit', sans-serif;
     font-size: 16px;
     font-weight: bold;
     backdrop-filter: blur(5px);
     box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+    transition: all 0.3s;
 }
 
 .btn-history-toggle:hover {
@@ -180,41 +187,39 @@ input[type="text"] {
     transform: scale(1.05);
 }
 
-/* --- History Modal (หน้าต่างเด้ง) --- */
 /* =================================================================
-   ✅ CSS ชุดซ่อม: HISTORY MODAL (วางต่อท้ายไฟล์เดิม)
+   ✅ CSS ชุดซ่อม: HISTORY MODAL
    ================================================================= */
 
-/* 1. พื้นหลัง Modal (สีดำจางๆ เต็มจอ) */
+/* 1. พื้นหลัง Modal */
 .history-modal {
     display: none;
     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
     background: rgba(0, 0, 0, 0.85);
-    z-index: 2000;
+    z-index: 2000; /* ✅ สูงกว่าปุ่ม Toggle */
     justify-content: center; align-items: center;
     backdrop-filter: blur(10px);
 }
 
-/* 2. กล่องการ์ดหลัก (กรอบนอกสุด) */
+/* 2. กล่องการ์ดหลัก */
 .history-content {
     background: #1e1e24;
-    width: 95%;           /* กว้างเกือบเต็มจอมือถือ */
-    max-width: 700px;     /* กว้างสุดไม่เกิน 700px */
-    max-height: 85vh;     /* สูงไม่เกิน 85% ของหน้าจอ */
+    width: 95%;           
+    max-width: 700px;     
+    max-height: 85vh;     
     border-radius: 15px;
     border: 1px solid #444;
     box-shadow: 0 10px 40px rgba(0,0,0,0.6);
     
-    /* 🔥 จัด Layout เป็น Flex แนวตั้ง เพื่อให้ข้างในยืดหดได้ */
     display: flex;
     flex-direction: column;
-    overflow: hidden;     /* ห้ามทะลุกรอบ */
+    overflow: hidden;     
     animation: fadeIn 0.3s;
 }
 
 @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
 
-/* 3. ส่วนหัว (Header) */
+/* 3. ส่วนหัว */
 .history-header {
     padding: 15px 20px;
     background: #25252d;
@@ -222,27 +227,26 @@ input[type="text"] {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    flex-shrink: 0; /* ห้ามหดตัว */
+    flex-shrink: 0; 
 }
 .history-header h2 { margin: 0; color: #e4d6a7; font-size: 22px; }
 
-/* ปุ่มปิด (X) */
 .close-btn {
     background: none; border: none; color: #888; font-size: 28px; cursor: pointer; padding: 0; line-height: 1;
 }
 .close-btn:hover { color: #fff; }
 
-/* 4. ส่วนลำตัว (Body) - ตัวจัดระเบียบข้างใน */
+/* 4. ส่วนลำตัว */
 .history-body {
     display: flex;
     flex-direction: column;
-    flex: 1;              /* ยืดเต็มพื้นที่ที่เหลือ */
-    min-height: 0;        /* 🔥 แก้บั๊ก Flexbox ให้ Scrollbar ทำงาน */
+    flex: 1;              
+    min-height: 0;        
     background: #1e1e24;
-    overflow: hidden;     /* ห้ามล้น */
+    overflow: hidden;     
 }
 
-/* 5. แถบเมนูแท็บ (Tabs) */
+/* 5. แถบเมนูแท็บ */
 .history-tabs {
     display: flex;
     gap: 8px;
@@ -250,18 +254,16 @@ input[type="text"] {
     background: #1e1e24;
     border-bottom: 2px solid #2a2a35;
     
-    overflow-x: auto;     /* เลื่อนแนวนอน */
+    overflow-x: auto;     
     white-space: nowrap;
-    flex-shrink: 0;       /* ห้ามหด */
+    flex-shrink: 0;       
     
-    /* ตั้งค่า Scrollbar & เมาส์ลาก */
     -ms-overflow-style: none; scrollbar-width: none;
     cursor: grab; user-select: none;
 }
 .history-tabs::-webkit-scrollbar { display: none; }
 .history-tabs.dragging { cursor: grabbing; }
 
-/* ปุ่ม Tab */
 .tab-btn {
     background: transparent; border: none; color: #777;
     padding: 15px 10px;
@@ -275,13 +277,12 @@ input[type="text"] {
     width: 100%; height: 3px; background: #e4d6a7; border-radius: 3px 3px 0 0;
 }
 
-/* 6. พื้นที่แสดงรายชื่อ (ส่วนที่เลื่อนได้) */
+/* 6. พื้นที่แสดงรายชื่อ */
 .history-content-wrapper {
-    flex-grow: 1;         /* ขยายเต็มพื้นที่ */
-    overflow-y: auto;     /* ✅ สั่งให้เลื่อนแนวตั้งได้ */
+    flex-grow: 1;         
+    overflow-y: auto;     
     padding: 10px 0;
     
-    /* แต่ง Scrollbar ให้สวย */
     scrollbar-width: thin;
     scrollbar-color: #444 #1e1e24;
 }
@@ -289,34 +290,29 @@ input[type="text"] {
 .history-content-wrapper::-webkit-scrollbar-track { background: #1e1e24; }
 .history-content-wrapper::-webkit-scrollbar-thumb { background: #555; border-radius: 4px; }
 
-/* ซ่อน/แสดง Tab Content */
 .tab-content { display: none; }
 .tab-content.active { display: block; }
 
-/* 7. รายการชื่อ (List Items) */
+/* 7. รายการชื่อ */
 .history-item {
     padding: 12px 20px;
     border-bottom: 1px solid #2f2f38;
     display: flex;
-    justify-content: space-between; /* ชิดซ้าย-ขวา */
-    align-items: flex-start;        /* ชิดบน */
+    justify-content: space-between; 
+    align-items: flex-start;        
     font-size: 15px;
 }
 .history-item:hover { background: rgba(255,255,255,0.02); }
 .history-item:last-child { border-bottom: none; }
 
-/* ชื่อคน (ซ้าย) */
 .history-item { color: #eee; font-weight: 500; }
 
-/* ชื่อสังกัด (ขวา) */
 .history-item span {
     text-align: right;
     color: #999;
     font-size: 14px;
     font-weight: normal;
     padding-left: 15px;
-    
-    /* ปลดล็อกให้โชว์ข้อความเต็มๆ ไม่ตัดคำ */
     white-space: normal;
     max-width: 50%;
     word-break: break-word;

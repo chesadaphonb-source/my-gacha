@@ -1,4 +1,27 @@
-/* --- Configuration --- */
+/* ==========================================================================
+   ส่วนที่ 1: เชื่อมต่อ server และตั้งค่าตัวแปร (Global)
+   ========================================================================== */
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getDatabase, ref, set, onValue, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+// ⚠️ Config Firebase ของคุณ
+const firebaseConfig = {
+  apiKey: "AIzaSyAKE2HbyCt-CTjpasigrkaOlGGSwH5DlBM",
+  authDomain: "server-random.firebaseapp.com",
+  databaseURL: "https://server-random-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "server-random",
+  storageBucket: "server-random.firebasestorage.app",
+  messagingSenderId: "692801108531",
+  appId: "1:692801108531:web:89d571d87f5d74df9c0146",
+  measurementId: "G-EME97K8JDN"
+};
+
+// เริ่มต้นระบบ
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+const gameRef = ref(db, 'gacha_room_v1');
+
+// --- Configuration & Global Variables (ต้องประกาศก่อน onValue) ---
 const prizes = [
     { name: "Rank 5 (General)", count: 50, color: "#65a5f0" },
     { name: "Rank 4 (Rare)", count: 30, color: "#d376f0" },
@@ -14,39 +37,175 @@ let isWarping = false;
 let starColor = "#fff";
 let winnersHistory = {};
 
-/* --- 1. Load Data --- */
+// เช็ค Admin
+const urlParams = new URLSearchParams(window.location.search);
+const isAdmin = urlParams.get('admin') === 'true';
+
+/* ==========================================================================
+   ส่วนที่ 2: Listener (ตัวรับคำสั่งจาก Cloud)
+   ========================================================================== */
+onValue(gameRef, (snapshot) => {
+    const data = snapshot.val();
+    if (data) {
+        // อัปเดตข้อมูลพื้นฐาน
+        headers = data.headers || [];
+        participants = data.participants || [];
+        winnersHistory = data.history || {};
+        currentTier = data.currentTier || 0;
+
+        // ถ้าตั้งค่าเสร็จแล้ว ให้เปลี่ยนหน้า
+        if (data.isSetupDone) {
+            document.getElementById('setupContainer').style.display = 'none';
+            document.getElementById('mainScreen').style.display = 'block';
+            updateUI();
+        }
+
+        // --- ควบคุม Animation ตามสถานะ Server ---
+        if (data.status === 'WARPING') {
+             if (!isWarping) { 
+                 starColor = data.activeColor;
+                 runWarpEffect(); // เรียกฟังก์ชันวาร์ป
+             }
+        } else if (data.status === 'SHOW_RESULT') {
+            stopWarpEffect(); // หยุดวาร์ป
+            const tier = prizes[currentTier];
+            if(data.lastRoundWinners) {
+                showResults(data.lastRoundWinners, tier);
+            }
+        } else if (data.status === 'IDLE') {
+             closeResult(); 
+             stopWarpEffect();
+        }
+    }
+}); // <--- ✅ ปิดวงเล็บให้เรียบร้อยแล้ว
+
+/* ==========================================================================
+   ส่วนที่ 3: Logic การทำงาน (Admin สั่งงาน)
+   ========================================================================== */
+
+// 1. Load Data (ส่งขึ้น Cloud)
 function loadData() {
+    if (!isAdmin) return; 
+
     const urlInput = document.getElementById('sheetUrl');
     if(!urlInput) return;
     const url = urlInput.value.trim();
     if(!url) return alert("กรุณาใส่ลิงก์ CSV");
 
     const btn = document.querySelector('#setupContainer button');
-    if(btn) { btn.innerText = "กำลังโหลด..."; btn.disabled = true; }
+    if(btn) { btn.innerText = "กำลังส่งข้อมูล..."; btn.disabled = true; }
 
     fetch(url)
         .then(response => response.text())
         .then(csv => {
             const lines = csv.split(/\r?\n/).filter(line => line.trim() !== "");
             if (lines.length < 2) { alert("Data Error"); if(btn) btn.disabled=false; return; }
-            headers = lines[0].split(',').map(h => h.trim());
-            participants = lines.slice(1).map(line => {
+            
+            const newHeaders = lines[0].split(',').map(h => h.trim());
+            const newParticipants = lines.slice(1).map(line => {
                 const data = line.split(',');
                 let obj = {};
-                headers.forEach((h, i) => obj[h] = data[i] ? data[i].trim() : "-");
+                newHeaders.forEach((h, i) => obj[h] = data[i] ? data[i].trim() : "-");
                 obj._id = data[0].trim();
                 return obj;
             });
             
-            prizes.forEach(p => winnersHistory[p.name] = []);
-            document.getElementById('setupContainer').style.display = 'none';
-            document.getElementById('mainScreen').style.display = 'block';
-            updateUI();
+            const initialHistory = {};
+            prizes.forEach(p => initialHistory[p.name] = []);
+
+            // ส่งข้อมูลทั้งหมดขึ้น Firebase
+            set(gameRef, {
+                isSetupDone: true,
+                status: 'IDLE',
+                headers: newHeaders,
+                participants: newParticipants,
+                history: initialHistory,
+                currentTier: 0,
+                activeColor: '#fff',
+                lastRoundWinners: []
+            });
         })
         .catch(err => { console.error(err); alert("Link Error"); if(btn) btn.disabled=false; });
 }
 
-/* --- 2. Update UI --- */
+// 2. กดปุ่มสุ่ม (แก้ให้ส่งคำสั่ง WARPING ขึ้น Cloud)
+function startWish() {
+    // ฟังก์ชันนี้ทำงานเฉพาะเครื่อง Admin เท่านั้น
+    if(!isAdmin) return; 
+
+    const currentPrizeName = prizes[currentTier].name;
+    if (winnersHistory[currentPrizeName] && winnersHistory[currentPrizeName].length > 0) {
+        alert("⛔ รางวัลรอบนี้สุ่มไปแล้วครับ!");
+        return;
+    }
+    if(participants.length === 0) return alert("รายชื่อหมดแล้ว!");
+    
+    const tier = prizes[currentTier];
+
+    // 🔥 สั่ง Firebase ว่า "เริ่มวาร์ปได้!" (เครื่องคนอื่นจะเห็น Effect ทันที)
+    update(gameRef, {
+        status: 'WARPING',
+        activeColor: tier.color
+    });
+
+    // รอ 2 วินาที (เวลา Animation) แล้วค่อยสุ่มจริง
+    setTimeout(() => {
+        performRaffle();
+    }, 2000);
+}
+
+// 3. คำนวณผู้ชนะ และส่งผลขึ้น Cloud
+function performRaffle() {
+    if(!isAdmin) return;
+
+    const tier = prizes[currentTier];
+    const drawCount = Math.min(tier.count, participants.length);
+    
+    // Logic สุ่ม (Fisher-Yates Shuffle)
+    for (let i = participants.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [participants[i], participants[j]] = [participants[j], participants[i]];
+    }
+    
+    const winners = participants.slice(0, drawCount);
+    const remainingParticipants = participants.slice(drawCount);
+    
+    // อัปเดตประวัติในเครื่อง Admin เพื่อเตรียมส่ง
+    let newHistory = { ...winnersHistory };
+    newHistory[tier.name].push(...winners);
+
+    // 🔥 ส่งผลผู้ชนะ + รายชื่อที่เหลือ + สถานะโชว์ผล ขึ้น Firebase
+    update(gameRef, {
+        status: 'SHOW_RESULT',
+        lastRoundWinners: winners,
+        participants: remainingParticipants,
+        history: newHistory
+    });
+
+    // บันทึกลง Google Sheet
+    saveToSheet(winners, tier.name);
+}
+
+// 4. ไปรอบถัดไป
+function nextRound() { 
+    if(!isAdmin) return;
+    
+    // สั่ง Firebase ให้กลับสู่สถานะปกติ และขยับ Tier
+    update(gameRef, {
+        status: 'IDLE',
+        currentTier: currentTier + 1
+    });
+}
+
+// 5. Reset Game
+function resetGame() {
+    if(!isAdmin) return;
+    if(confirm("ต้องการล้างข้อมูลเริ่มใหม่ทั้งหมดใช่ไหม?")) {
+        set(gameRef, null).then(() => location.reload());
+    }
+}
+
+/* --- UI Helper Functions (แยกออกมาเพื่อให้ onValue เรียกใช้ได้ง่าย) --- */
 function updateUI() {
     const mainScreen = document.getElementById('mainScreen');
     if (currentTier >= prizes.length) {
@@ -54,8 +213,7 @@ function updateUI() {
             <h1 class="gold-text" style="font-size:40px;">🎉 จบกิจกรรม! 🎉</h1>
             <p>ขอบคุณผู้ร่วมสนุกทุกท่าน</p>
             <button class="btn-wish" onclick="toggleHistory()">📜 ดูสรุปรายชื่อ</button>
-            <br><br>
-            <button class="btn-wish" onclick="resetGame()">↺ เริ่มใหม่ (Reset)</button>
+            ${isAdmin ? '<br><br><button class="btn-wish" onclick="resetGame()">↺ เริ่มใหม่ (Reset)</button>' : ''}
         `;
         return;
     }
@@ -68,54 +226,27 @@ function updateUI() {
     starColor = tier.color;
 }
 
-/* --- 3. Raffle Logic --- */
-function startWish() {
-    const currentPrizeName = prizes[currentTier].name;
-    if (winnersHistory[currentPrizeName] && winnersHistory[currentPrizeName].length > 0) {
-        alert("⛔ รางวัลรอบนี้สุ่มไปแล้วครับ!");
-        return;
-    }
-    if(participants.length === 0) return alert("รายชื่อหมดแล้ว!");
-    
-    const tier = prizes[currentTier];
+function runWarpEffect() {
     const meteor = document.getElementById('meteor');
     const flash = document.getElementById('flashOverlay');
-    
     isWarping = true;
     document.querySelector('.container').style.opacity = 0;
-    document.querySelector('.btn-history-toggle').style.display = 'none';
+    if(document.querySelector('.btn-history-toggle')) 
+        document.querySelector('.btn-history-toggle').style.display = 'none';
 
-    meteor.style.color = tier.color; 
-    flash.style.background = tier.color;
-
-    setTimeout(() => { meteor.classList.add('meteor-falling'); }, 500);
-    setTimeout(() => {
-        flash.style.opacity = 1;
-        setTimeout(() => {
-            performRaffle();
-            flash.style.opacity = 0;
-            isWarping = false;
-            meteor.classList.remove('meteor-falling');
-            flash.style.background = "white";
-        }, 300);
-    }, 1800);
+    if(meteor) { meteor.style.color = starColor; meteor.classList.add('meteor-falling'); }
+    if(flash) { 
+        flash.style.background = starColor; 
+        setTimeout(() => { flash.style.opacity = 1; }, 1500); 
+    }
 }
 
-function performRaffle() {
-    const tier = prizes[currentTier];
-    const drawCount = Math.min(tier.count, participants.length);
-    for (let i = participants.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [participants[i], participants[j]] = [participants[j], participants[i]];
-    }
-    const winners = participants.slice(0, drawCount);
-    participants = participants.slice(drawCount);
-    winnersHistory[tier.name].push(...winners);
-    
-    // บันทึกลง Sheet ทันทีที่สุ่มเสร็จ
-    saveToSheet(winners, tier.name);
-    
-    showResults(winners, tier);
+function stopWarpEffect() {
+    isWarping = false;
+    const meteor = document.getElementById('meteor');
+    const flash = document.getElementById('flashOverlay');
+    if(meteor) meteor.classList.remove('meteor-falling');
+    if(flash) { flash.style.opacity = 0; flash.style.background = "white"; }
 }
 
 function showResults(winners, tier) {
@@ -151,16 +282,11 @@ function showResults(winners, tier) {
 function closeResult() {
     document.getElementById('resultScreen').style.display = 'none';
     document.querySelector('.container').style.opacity = 1;
-    document.querySelector('.btn-history-toggle').style.display = 'block';
+    if(document.querySelector('.btn-history-toggle'))
+        document.querySelector('.btn-history-toggle').style.display = 'block';
 }
 
-function nextRound() { closeResult(); currentTier++; updateUI(); }
-
-function resetGame() {
-    location.reload(); 
-}
-
-/* --- 4. History & Copy System --- */
+/* --- History & Copy System --- */
 function toggleHistory() {
     const modal = document.getElementById('historyModal');
     const list = document.getElementById('historyList');
@@ -178,9 +304,7 @@ function toggleHistory() {
             activePrizes.forEach((prize, index) => {
                 const isActive = index === 0 ? 'active' : '';
                 const winners = winnersHistory[prize.name];
-
                 tabsHtml += `<button class="tab-btn ${isActive}" onclick="switchTab(event, 'tab-${index}')">${prize.name} <span>(${winners.length})</span></button>`;
-
                 contentHtml += `
                     <div id="tab-${index}" class="tab-content ${isActive}">
                         <div style="text-align:right; margin-bottom:10px;">
@@ -197,15 +321,12 @@ function toggleHistory() {
 
             tabsHtml += `</div>`;
             contentHtml += `</div>`;
-
-            // ✅ Search Bar
             const searchHtml = `
                 <div style="padding: 10px 20px; text-align: center;">
                     <input type="text" id="historySearchInput" onkeyup="filterHistory()" placeholder="🔍 พิมพ์ชื่อเพื่อค้นหา..." 
                     style="width: 100%; max-width: 400px; padding: 10px; border-radius: 20px; border: 1px solid #555; background: #222; color: #fff; text-align: center; outline: none;">
                 </div>
             `;
-
             list.innerHTML = tabsHtml + searchHtml + contentHtml;
             initDragScroll();
         }
@@ -223,15 +344,12 @@ function initDragScroll() {
     slider.addEventListener('mousemove', (e) => { if (!isDown) return; e.preventDefault(); const x = e.pageX - slider.offsetLeft; const walk = (x - startX) * 2; slider.scrollLeft = scrollLeft - walk; });
 }
 
-window.switchTab = function(event, tabId) {                                                    
+window.switchTab = function(event, tabId) {                                             
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     event.currentTarget.classList.add('active');
     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-    
     const target = document.getElementById(tabId);
     if(target) target.classList.add('active');
-
-    // เคลียร์ค่าในช่องค้นหา
     const searchInput = document.getElementById('historySearchInput');
     if (searchInput) {
         searchInput.value = ""; 
@@ -254,7 +372,19 @@ function copyToClipboard(rankName) {
     });
 }
 
-/* --- 5. Background Animation --- */
+function filterHistory() {
+    const input = document.getElementById('historySearchInput');
+    const filter = input.value.toLowerCase();
+    const activeTab = document.querySelector('.tab-content.active');
+    if (!activeTab) return;
+    const items = activeTab.getElementsByClassName('searchable-item');
+    for (let i = 0; i < items.length; i++) {
+        const text = items[i].textContent || items[i].innerText;
+        items[i].style.display = (text.toLowerCase().indexOf(filter) > -1) ? "flex" : "none";
+    }
+}
+
+/* --- Background Animation --- */
 const canvas = document.getElementById('starCanvas');
 const ctx = canvas.getContext('2d');
 let w, h, stars = [], planets = [];
@@ -266,7 +396,6 @@ function resize() {
 window.addEventListener('resize', resize); 
 resize();
 
-/* --- Class ดาวฤกษ์ (เส้นๆ) --- */
 class Star {
     constructor() { this.reset(); }
     reset() { 
@@ -299,24 +428,18 @@ class Star {
     }
 }
 
-/* --- Class ดาวเคราะห์ (วงกลมสีๆ) --- */
 class Planet {
     constructor() { this.reset(); }
-    
     reset() {
         this.x = (Math.random() - 0.5) * w * 2;
         this.y = (Math.random() - 0.5) * h * 2;
         this.z = w + Math.random() * w; 
         this.size = Math.random() * 30 + 10; 
-        
         const colors = ["#ff6b6b", "#4ecdc4", "#ffe66d", "#1a535c", "#f7fff7", "#ff9ff3", "#feca57"];
         this.color = colors[Math.floor(Math.random() * colors.length)];
-        
-        // 🪐 เพิ่มโอกาส 30% ที่จะเป็นดาวเสาร์ (มีวงแหวน)
         this.hasRing = Math.random() > 0.7; 
-        this.ringAngle = Math.random() * Math.PI; // องศาการเอียงของวงแหวน
+        this.ringAngle = Math.random() * Math.PI;
     }
-    
     update() {
         this.z -= isWarping ? 60 : 1.5; 
         if (this.z < 1) {
@@ -324,29 +447,23 @@ class Planet {
             this.z = w + 500; 
         }
     }
-    
     draw() {
         let sx = (this.x / this.z) * w + w / 2;
         let sy = (this.y / this.z) * h + h / 2;
         let r = (1 - this.z / w) * this.size;
         if (r < 0) r = 0; 
-        
-        // ถ้ามีวงแหวน ให้วาดวงแหวนก่อน (อยู่ข้างหลัง)
         if (this.hasRing) {
             ctx.save();
             ctx.translate(sx, sy);
             ctx.rotate(this.ringAngle);
             ctx.beginPath();
-            // วาดวงรี (Ellipse) ทำเป็นวงแหวน
             ctx.ellipse(0, 0, r * 2.2, r * 0.6, 0, 0, Math.PI * 2);
             ctx.strokeStyle = this.color;
-            ctx.lineWidth = r * 0.4; // ความหนาของวงแหวน
+            ctx.lineWidth = r * 0.4; 
             ctx.globalAlpha = isWarping ? 0.5 : 0.3; 
             ctx.stroke();
             ctx.restore();
         }
-
-        // วาดตัวดาว
         ctx.beginPath();
         ctx.arc(sx, sy, r, 0, Math.PI * 2);
         ctx.fillStyle = this.color;
@@ -356,7 +473,6 @@ class Planet {
     }
 }
 
-/* --- สร้างดาวและเริ่ม Animate --- */
 stars = [];
 planets = []; 
 for(let i=0; i<3000; i++) stars.push(new Star());
@@ -365,20 +481,16 @@ for(let i=0; i<30; i++) planets.push(new Planet());
 function animate() {
     ctx.fillStyle = "#0c0c10"; 
     ctx.fillRect(0, 0, w, h);
-    
-    // วาดดาวฤกษ์
     stars.forEach(s => { s.update(); s.draw(); });
-    
-    // วาดดาวเคราะห์ 
     planets.forEach(p => { p.update(); p.draw(); });
-
     requestAnimationFrame(animate);
 }
 
-// ⚠️ Google Script URL (ของคุณถูกต้องแล้ว)
+// Google Script URL (สำหรับบันทึกผล)
 const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby_BJhSpOljb4B0rgocuzrV-ehaiL9Tq5yCWkJcAFiL85cGYUTGb5RF7jvczH99B7Ie0g/exec"; 
 
 function saveToSheet(winners, rankName) {
+    if(!isAdmin) return; // เฉพาะ Admin เท่านั้นที่บันทึก
     const dataToSend = {
         rank: rankName,
         winners: winners.map(w => ({
@@ -387,7 +499,6 @@ function saveToSheet(winners, rankName) {
             dept: w[headers[2]] || "-" 
         }))
     };
-
     fetch(GOOGLE_SCRIPT_URL, {
         method: "POST",
         mode: "no-cors",
@@ -398,20 +509,14 @@ function saveToSheet(winners, rankName) {
     }).catch(err => console.error("Error sending to sheet:", err));
 }
 
-/* --- ฟังก์ชันสำหรับกรองรายชื่อ (Search Logic) --- */
-function filterHistory() {
-    const input = document.getElementById('historySearchInput');
-    const filter = input.value.toLowerCase();
-    const activeTab = document.querySelector('.tab-content.active');
-    if (!activeTab) return;
-
-    const items = activeTab.getElementsByClassName('searchable-item');
-    for (let i = 0; i < items.length; i++) {
-        const text = items[i].textContent || items[i].innerText;
-        items[i].style.display = (text.toLowerCase().indexOf(filter) > -1) ? "flex" : "none";
-    }
-}
-
-// เริ่ม Animation
-
 animate();
+
+// --- 6. Expose Functions to Window (สำคัญมาก! เพื่อให้ปุ่ม HTML กดติด) ---
+window.loadData = loadData;
+window.startWish = startWish;
+window.nextRound = nextRound;
+window.resetGame = resetGame;
+window.toggleHistory = toggleHistory;
+window.copyToClipboard = copyToClipboard;
+window.filterHistory = filterHistory;
+// window.switchTab มีเขียนไว้ในโค้ดแล้ว ไม่ต้องใส่ซ้ำ
