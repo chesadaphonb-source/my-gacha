@@ -359,8 +359,8 @@ class Planet {
 /* --- สร้างดาวและเริ่ม Animate --- */
 stars = [];
 planets = []; 
-for(let i=0; i<4000; i++) stars.push(new Star());
-for(let i=0; i<25; i++) planets.push(new Planet()); 
+for(let i=0; i<3000; i++) stars.push(new Star());
+for(let i=0; i<30; i++) planets.push(new Planet()); 
 
 function animate() {
     ctx.fillStyle = "#0c0c10"; 
@@ -413,4 +413,5 @@ function filterHistory() {
 }
 
 // เริ่ม Animation
+
 animate();
