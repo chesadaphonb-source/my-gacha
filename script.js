@@ -30,8 +30,9 @@ window.toggleHistory = toggleHistory;
 window.copyToClipboard = copyToClipboard;
 window.filterHistory = filterHistory;
 window.closeResult = closeResult;
+window.forceClearCache = forceClearCache; // เพิ่มตัวนี้ให้ด้วยครับ
 
-// --- Configuration & Global Variables (ต้องประกาศก่อน onValue) ---
+// --- Configuration & Global Variables ---
 const prizes = [
     { name: "รางวัลที่ 5 (20 บาท)", count: 50, color: "#33CC00" },
     { name: "รางวัลที่ 4 (50 บาท)", count: 30, color: "#99CCFF" },
@@ -63,11 +64,11 @@ onValue(gameRef, (snapshot) => {
         winnersHistory = data.history || {};
         currentTier = data.currentTier || 0;
 
-        // 🔥🔥🔥 เพิ่มบรรทัดนี้: ถ้าไม่มีคน (คือยังไม่ได้ Load Data) ให้หยุดทำงานทันที กัน Error
-       if (!participants || participants.length === 0) {
+        // ถ้าไม่มีคน (คือยังไม่ได้ Load Data) ให้แสดงหน้า Setup
+        if (!participants || participants.length === 0) {
              document.getElementById('setupContainer').style.display = 'block';
              document.getElementById('mainScreen').style.display = 'none';
-             return; // หยุดทำงานแค่นี้ ไม่ต้องไปทำ Animation ต่อ
+             return; 
         }
 
         // ถ้าตั้งค่าเสร็จแล้ว ให้เปลี่ยนหน้า
@@ -94,13 +95,13 @@ onValue(gameRef, (snapshot) => {
              stopWarpEffect();
         }
     }
-}); // <--- ✅ ปิดวงเล็บให้เรียบร้อยแล้ว
+});
 
 /* ==========================================================================
    ส่วนที่ 3: Logic การทำงาน (Admin สั่งงาน)
    ========================================================================== */
 
-// 1. Load Data (ส่งขึ้น Cloud)
+// 1. Load Data
 function loadData() {
     if (!isAdmin) return; 
 
@@ -130,7 +131,6 @@ function loadData() {
             const initialHistory = {};
             prizes.forEach(p => initialHistory[p.name] = []);
 
-            // ส่งข้อมูลทั้งหมดขึ้น Firebase
             set(gameRef, {
                 isSetupDone: true,
                 status: 'IDLE',
@@ -145,9 +145,8 @@ function loadData() {
         .catch(err => { console.error(err); alert("Link Error"); if(btn) btn.disabled=false; });
 }
 
-// 2. กดปุ่มสุ่ม (แก้ให้ส่งคำสั่ง WARPING ขึ้น Cloud)
+// 2. กดปุ่มสุ่ม
 function startWish() {
-    // ฟังก์ชันนี้ทำงานเฉพาะเครื่อง Admin เท่านั้น
     if(!isAdmin) return; 
    
     const currentPrizeName = prizes[currentTier].name;
@@ -159,30 +158,26 @@ function startWish() {
     
     const tier = prizes[currentTier];
 
-    // 🔥 สั่ง Firebase ว่า "เริ่มวาร์ปได้!" (เครื่องคนอื่นจะเห็น Effect ทันที)
     update(gameRef, {
         status: 'WARPING',
         activeColor: tier.color
     });
 
-    // รอ 2 วินาที (เวลา Animation) แล้วค่อยสุ่มจริง
     setTimeout(() => {
         performRaffle();
     }, 2000);
 }
 
-// 3. คำนวณผู้ชนะ และส่งผลขึ้น Cloud
-// 3. คำนวณผู้ชนะ และส่งผลขึ้น Cloud (ฉบับแก้บั๊กจอฟ้า 100%)
+// 3. คำนวณผู้ชนะ
 function performRaffle() {
     if(!isAdmin) return;
 
     const tier = prizes[currentTier];
-    // กันเหนียว: ถ้าไม่มีรางวัลนี้ในระบบ ให้หยุดทำงาน (กัน Error)
     if (!tier) return alert("ไม่พบข้อมูลรางวัล");
 
     const drawCount = Math.min(tier.count, participants.length);
     
-    // Logic สุ่ม (Fisher-Yates Shuffle)
+    // Fisher-Yates Shuffle
     for (let i = participants.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [participants[i], participants[j]] = [participants[j], participants[i]];
@@ -191,18 +186,13 @@ function performRaffle() {
     const winners = participants.slice(0, drawCount);
     const remainingParticipants = participants.slice(drawCount);
     
-    // --- แก้ไขจุดเสี่ยง Error (undefined push) ---
     let newHistory = { ...winnersHistory };
     
-    // ถ้ายังไม่มีอาเรย์ของรางวัลนี้ ให้สร้างใหม่ก่อน (สำคัญมาก!)
     if (!newHistory[tier.name]) {
         newHistory[tier.name] = [];
     }
-    
-    // บันทึกแบบปลอดภัย
     newHistory[tier.name].push(...winners);
 
-    // 🔥 ส่งผลผู้ชนะ + รายชื่อที่เหลือ + สถานะโชว์ผล ขึ้น Firebase
     update(gameRef, {
         status: 'SHOW_RESULT',
         lastRoundWinners: winners,
@@ -210,30 +200,31 @@ function performRaffle() {
         history: newHistory
     });
 
-    // บันทึกลง Google Sheet
     saveToSheet(winners, tier.name);
 }
 
 // 4. ไปรอบถัดไป
 function nextRound() { 
     if(!isAdmin) return;
-    
-    // สั่ง Firebase ให้กลับสู่สถานะปกติ และขยับ Tier
     update(gameRef, {
         status: 'IDLE',
         currentTier: currentTier + 1
     });
 }
 
-// 5. Reset Game
+// 5. Reset Game (แก้ไข: ให้มีการแจ้งเตือนชัดเจน)
 function resetGame() {
     if(!isAdmin) return;
-    if(confirm("ต้องการล้างข้อมูลเริ่มใหม่ทั้งหมดใช่ไหม?")) {
-        set(gameRef, null).then(() => location.reload());
+    
+    if(confirm("⚠️ คำเตือนสำคัญ!\n\nนี่คือการล้างข้อมูล 'ทั้งหมด' ในระบบ\n- รายชื่อผู้โชคดีจะหายไป\n- ประวัติการจับรางวัลจะหายไป\n\nยืนยันที่จะล้างค่าหรือไม่?")) {
+        set(gameRef, null).then(() => {
+            alert("✅ ล้างระบบเรียบร้อย!");
+            location.reload();
+        });
     }
 }
 
-/* --- UI Helper Functions (แยกออกมาเพื่อให้ onValue เรียกใช้ได้ง่าย) --- */
+/* --- UI Helper Functions --- */
 function updateUI() {
     const mainScreen = document.getElementById('mainScreen');
     if (currentTier >= prizes.length) {
@@ -259,12 +250,16 @@ function runWarpEffect() {
     const flash = document.getElementById('flashOverlay');
     isWarping = true;
     document.querySelector('.container').style.opacity = 0;
+    
     if(document.querySelector('.btn-history-toggle')) 
         document.querySelector('.btn-history-toggle').style.display = 'none';
    
-   // ✅✅✅ ส่วนใหม่: ซ่อนปุ่ม Update (เติมตรงนี้ชัวร์สุด) ---
     const btnUpdate = document.getElementById('btnUpdate');
     if(btnUpdate) btnUpdate.style.display = 'none';
+
+    // ✅ เพิ่ม: ซ่อนปุ่ม Reset ตอนวาร์ปด้วย (เพื่อความสวยงาม)
+    const btnReset = document.getElementById('btnResetSystem');
+    if(btnReset) btnReset.style.display = 'none';
 
     if(meteor) { meteor.style.color = starColor; meteor.classList.add('meteor-falling'); }
     if(flash) { 
@@ -285,45 +280,36 @@ function showResults(winners, tier) {
     const grid = document.getElementById('resultGrid');
     const title = document.getElementById('resultTitle');
 
-    // --- ส่วนที่ 1: ตั้งค่าหัวข้อ (Title) ---
     title.innerText = tier.name;
     title.style.color = tier.color;
-    
-    // 🔥 ปรับหัวข้อให้ชิดซ้ายตามที่ขอ
     title.style.textAlign = 'left'; 
     title.style.width = '100%';
-    title.style.paddingLeft = '10px'; // เว้นระยะจากขอบนิดหน่อยจะได้ไม่เบียดจอ
+    title.style.paddingLeft = '10px'; 
     
     grid.innerHTML = "";
 
-    // --- ส่วนที่ 2: สร้างการ์ดรางวัล (วิธีใหม่: ไม่ใช้ innerHTML) ---
     winners.forEach((winner, index) => {
-        // 1. สร้างกล่องหลัก (Card)
         const card = document.createElement('div');
         card.className = 'card';
         card.style.borderColor = tier.color;
         card.style.animationDelay = `${index * 0.05}s`;
-        card.style.overflow = "hidden"; // ตัดมุมโค้งให้สวย
+        card.style.overflow = "hidden";
 
-        // 2. สร้างส่วนหัว (Header) - สีพื้นหลัง
         const headerDiv = document.createElement('div');
         headerDiv.className = 'card-header';
         headerDiv.style.background = tier.color;
-        headerDiv.textContent = winner[headers[0]]; // ใส่เลข ID
-        card.appendChild(headerDiv); // ยัดใส่ card
+        headerDiv.textContent = winner[headers[0]];
+        card.appendChild(headerDiv);
 
-        // 3. สร้างส่วนเนื้อหา (Body)
         const bodyDiv = document.createElement('div');
         bodyDiv.className = 'card-body';
         
-            // 3.1 ชื่อคน (Main Info)
             const mainInfo = document.createElement('div');
             mainInfo.className = 'info-main';
             mainInfo.style.color = tier.color;
             mainInfo.textContent = winner[headers[1]] || "";
             bodyDiv.appendChild(mainInfo);
 
-            // 3.2 ข้อมูลย่อย (Sub Info) - วนลูปสร้าง
             for(let k=2; k < headers.length; k++) {
                 const val = winner[headers[k]];
                 if(val && val !== "-") {
@@ -334,8 +320,8 @@ function showResults(winners, tier) {
                 }
             }
 
-        card.appendChild(bodyDiv); // ยัด Body ใส่ card
-        grid.appendChild(card);    // ยัด card ลงตาราง
+        card.appendChild(bodyDiv);
+        grid.appendChild(card);   
     });
 
     document.getElementById('resultScreen').style.display = 'flex';
@@ -344,13 +330,16 @@ function showResults(winners, tier) {
 function closeResult() {
     document.getElementById('resultScreen').style.display = 'none';
     document.querySelector('.container').style.opacity = 1;
-   
+    
     if(document.querySelector('.btn-history-toggle'))
         document.querySelector('.btn-history-toggle').style.display = 'block';
 
-   // ✅✅✅ ส่วนใหม่: โชว์ปุ่ม Update กลับมา ---
     const btnUpdate = document.getElementById('btnUpdate');
     if(btnUpdate) btnUpdate.style.display = 'block';
+
+    // ✅ เพิ่ม: โชว์ปุ่ม Reset กลับมา (ถ้าเป็น admin)
+    const btnReset = document.getElementById('btnResetSystem');
+    if(btnReset && isAdmin) btnReset.style.display = 'block';
 }
 
 /* --- History & Copy System --- */
@@ -553,11 +542,11 @@ function animate() {
     requestAnimationFrame(animate);
 }
 
-// Google Script URL (สำหรับบันทึกผล)
+// Google Script URL
 const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby_BJhSpOljb4B0rgocuzrV-ehaiL9Tq5yCWkJcAFiL85cGYUTGb5RF7jvczH99B7Ie0g/exec"; 
 
 function saveToSheet(winners, rankName) {
-    if(!isAdmin) return; // เฉพาะ Admin เท่านั้นที่บันทึก
+    if(!isAdmin) return; 
     const dataToSend = {
         rank: rankName,
         winners: winners.map(w => ({
@@ -576,49 +565,50 @@ function saveToSheet(winners, rankName) {
     }).catch(err => console.error("Error sending to sheet:", err));
 }
 
-window.forceClearCache = function() {
+function forceClearCache() {
     if(!confirm("ต้องการล้าง Cache เพื่ออัปเดตข้อมูลใช่ไหม?")) return;
-
-    // 1. ล้างข้อมูลในเครื่อง
     localStorage.clear();
     sessionStorage.clear();
-
-    // 2. สั่งโหลดหน้าใหม่แบบบังคับ (Cache Busting)
     const url = new URL(window.location.href);
     url.searchParams.set('v', Date.now()); 
     window.location.href = url.toString();
 }
+
 // ==========================================
-// ✅ ส่วนที่เพิ่มใหม่: เช็คสิทธิ์ Admin / Viewer
+// ✅ ส่วนที่แก้ไข: เพิ่มการจัดการปุ่ม Reset System
 // ==========================================
 document.addEventListener('DOMContentLoaded', () => {
-    // เช็คว่าใน URL มีคำว่า ?admin=true หรือไม่
+    // เช็คสิทธิ์ Admin
     const urlParams = new URLSearchParams(window.location.search);
     const isAdminUser = urlParams.get('admin') === 'true';
 
     const btnStart = document.getElementById('btnStart');
-    const msgWaiting = document.getElementById('msgWaiting')
+    const msgWaiting = document.getElementById('msgWaiting');
     const controlBar = document.querySelector('.control-bar');
+    
+    // 👇 ดึงปุ่ม Reset System มาใช้งาน
+    const btnReset = document.getElementById('btnResetSystem');
 
     if (isAdminUser) {
-        // 👑 ถ้าเป็น Admin: โชว์ปุ่ม Start, ซ่อน Waiting
+        // 👑 โหมด Admin
         if(btnStart) btnStart.style.display = 'inline-block';
         if(msgWaiting) msgWaiting.style.display = 'none';
-        if(controlBar) controlBar.style.display = 'flex'; // แอดมินต้องเห็นปุ่ม
+        if(controlBar) controlBar.style.display = 'flex';
+        
+        // ✅ เปิดโชว์ปุ่ม Reset ให้ Admin เห็น
+        if(btnReset) btnReset.style.display = 'block';
+
         console.log("Mode: Admin");
     } else {
-        // 👤 ถ้าเป็นคนดู: ซ่อนปุ่ม Start, โชว์ Waiting
+        // 👤 โหมดคนดู
         if(btnStart) btnStart.style.display = 'none';
         if(msgWaiting) msgWaiting.style.display = 'flex';
-       // 👇 ซ่อนแถบควบคุมด้านล่างสำหรับคนดู
         if(controlBar) controlBar.style.display = 'none';
+        
+        // 🔒 ซ่อนปุ่ม Reset ให้คนดู (กันเหนียว)
+        if(btnReset) btnReset.style.display = 'none';
+
         console.log("Mode: Viewer");
     }
     animate();
 });
-
-
-
-
-
-
