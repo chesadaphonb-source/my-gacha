@@ -34,9 +34,9 @@ window.forceClearCache = forceClearCache; // เพิ่มตัวนี้�
 
 // --- Configuration & Global Variables ---
 const prizes = [
-    { name: "รางวัลที่ 7 (200 บาท)", count: 17, color: "#33CC00" },
+    { name: "รางวัลที่ 7 (200 บาท)", count: 16, color: "#33CC00" },
     { name: "รางวัลที่ 6 (200 บาท)", count: 16, color: "#33CC00" },
-    { name: "รางวัลที่ 5 (300 บาท)", count: 19, color: "#33CC00" },
+    { name: "รางวัลที่ 5 (300 บาท)", count: 16, color: "#33CC00" },
     { name: "รางวัลที่ 4 (400 บาท)", count: 13, color: "#99CCFF" },
     { name: "รางวัลที่ 3 (500 บาท)", count: 13, color: "#FF9999" },
     { name: "รางวัลที่ 2 (1000 บาท)", count: 3, color: "#CC33FF" },
@@ -615,3 +615,4 @@ document.addEventListener('DOMContentLoaded', () => {
     animate();
 
 });
+
