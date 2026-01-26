@@ -578,18 +578,12 @@ function forceClearCache() {
 // ✅ ส่วนที่แก้ไข: เพิ่มการจัดการปุ่ม Reset System
 // ==========================================
 document.addEventListener('DOMContentLoaded', () => {
-    // เช็คสิทธิ์ Admin
-    const urlParams = new URLSearchParams(window.location.search);
-    const isAdminUser = urlParams.get('admin') === 'true';
-
     const btnStart = document.getElementById('btnStart');
     const msgWaiting = document.getElementById('msgWaiting');
     const controlBar = document.querySelector('.control-bar');
-    
-    // 👇 ดึงปุ่ม Reset System มาใช้งาน
     const btnReset = document.getElementById('btnResetSystem');
 
-    if (isAdminUser) {
+    if (isAdmin) {
         // 👑 โหมด Admin
         if(btnStart) btnStart.style.display = 'inline-block';
         if(msgWaiting) msgWaiting.style.display = 'none';
@@ -612,3 +606,4 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     animate();
 });
+
