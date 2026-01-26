@@ -320,47 +320,70 @@ input[type="text"]:focus {
 }
 /* --- Waiting Message (รอ Admin) --- */
 #msgWaiting {
-    /* ✅ จัดกึ่งกลางสมบูรณ์แบบ */
-    display: none; /* ซ่อนไว้ก่อน เดี๋ยว JS มาเปิดเป็น flex */
+    display: none; /* JS จะเปลี่ยนเป็น flex */
     justify-content: center;
     align-items: center;
-    flex-direction: row; /* เรียงแนวนอน */
-    gap: 15px; /* ระยะห่างระหว่างไอคอนกับข้อความ */
-
-    /* 🎨 ตกแต่งความสวยงาม */
+    position: relative;
+    padding: 20px 40px;
     margin-top: 30px;
-    padding: 15px 30px;
-    background: rgba(255, 255, 255, 0.05); /* พื้นหลังใสๆ */
-    border: 1px solid rgba(255, 255, 255, 0.2); /* ขอบจางๆ */
-    border-radius: 50px; /* ทรงแคปซูล */
-    backdrop-filter: blur(5px); /* เบลอฉากหลัง */
-
-    /* 🅰️ ฟอนต์และสี */
-    color: #00d2ff; /* สีฟ้า Neon Sci-fi */
-    font-size: 18px;
-    font-weight: 500;
-    text-shadow: 0 0 10px rgba(0, 210, 255, 0.5); /* เงาเรืองแสง */
-    letter-spacing: 1px;
-
-    /* ✨ อนิเมชั่น */
-    animation: pulseGlow 2s infinite ease-in-out;
+    
+    /* ฟอนต์แบบ Terminal */
+    font-family: 'Courier New', Courier, monospace; 
+    color: #00f2ff;
+    font-size: 1.1rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    
+    background: rgba(0, 20, 40, 0.6);
+    border: 1px solid #00f2ff;
+    border-radius: 4px; /* ทรงเหลี่ยมจะดูเป็นเครื่องจักรมากกว่า */
+    overflow: hidden;
+    box-shadow: inset 0 0 15px rgba(0, 242, 255, 0.2), 0 0 20px rgba(0, 242, 255, 0.1);
 }
 
-/* อนิเมชั่นหายใจวิบวับ */
-@keyframes pulseGlow {
-    0% { transform: scale(1); opacity: 0.8; box-shadow: 0 0 0 rgba(0, 210, 255, 0); }
-    50% { transform: scale(1.05); opacity: 1; box-shadow: 0 0 20px rgba(0, 210, 255, 0.3); }
-    100% { transform: scale(1); opacity: 0.8; box-shadow: 0 0 0 rgba(0, 210, 255, 0); }
+/* --- เส้น Scanline วิ่งขึ้นลง --- */
+#msgWaiting::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 2px;
+    background: rgba(0, 242, 255, 0.5);
+    box-shadow: 0 0 10px #00f2ff;
+    animation: scanning 3s linear infinite;
+    z-index: 1;
 }
 
-/* ไอคอนหมุนๆ (ถ้ามีไอคอน <i class="...">) */
-#msgWaiting i {
-    animation: spinSlow 3s linear infinite;
+@keyframes scanning {
+    0% { top: 0%; }
+    100% { top: 100%; }
 }
 
-@keyframes spinSlow {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
+/* --- อนิเมชั่นตัวหนังสือกระพริบเหมือนสัญญาณขาดๆหายๆ --- */
+#msgWaiting {
+    animation: textFlicker 2s infinite;
+}
+
+@keyframes textFlicker {
+    0%, 100% { opacity: 1; }
+    92% { opacity: 1; }
+    93% { opacity: 0.5; }
+    94% { opacity: 1; }
+    96% { opacity: 0.3; }
+    97% { opacity: 1; }
+}
+
+/* --- จุดไฟสีแดง Status: Offline/Waiting --- */
+#msgWaiting::after {
+    content: "●";
+    margin-left: 15px;
+    color: #ff4d4d;
+    text-shadow: 0 0 10px #ff4d4d;
+    animation: blink 1s steps(2) infinite;
+}
+
+@keyframes blink {
+    0% { opacity: 0; }
+    100% { opacity: 1; }
 }
 
 /* =================================================================
@@ -389,5 +412,6 @@ input[type="text"]:focus {
     box-shadow: 0 0 20px rgba(255, 77, 77, 0.6); /* เรืองแสง */
     transform: scale(1.05);
 }
+
 
 
