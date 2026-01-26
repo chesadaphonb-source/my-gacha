@@ -590,7 +590,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if(controlBar) controlBar.style.display = 'flex';
         
         // ✅ เปิดโชว์ปุ่ม Reset ให้ Admin เห็น
-        if(btnReset) btnReset.style.display = 'inline-block';
+        if(btnReset) btnReset.style.display = 'block';
 
         console.log("Mode: Admin");
     } else {
@@ -606,6 +606,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     animate();
 });
+
 
 
 
