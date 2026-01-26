@@ -14,7 +14,7 @@
     <div id="flashOverlay"></div>
     <div id="meteor"></div>
 
-    <div class="container" id="setupContainer" style="display: none;">
+    <div class="container" id="setupContainer">
         <div class="setup-box">
             <h1 class="gold-text">💫Wish System</h1>
             <p class="sub-text">เชื่อมต่อ Google Sheet เพื่อเริ่มการสุ่ม</p>
@@ -27,21 +27,13 @@
     </div>
 </div>
 
-<div class="container" id="mainScreen">
+<div class="container" id="mainScreen" style="display:none;">
     <div id="bannerDisplay" class="banner-display"></div>
     <div class="pool-count" id="poolCount">กำลังโหลด...</div>
     
-    <div class="action-area">
-        <button id="btnStart" class="btn-wish start-btn" onclick="startWish()" style="display: none;">
-            ✦ START WISH ✦
-        </button>
-
-        <div id="msgWaiting" class="waiting-box" style="display: none;">
-            <div class="spinner"></div>
-            <h3>Waiting for next round...</h3>
-            <p>กรุณารอผู้ดูแลระบบเริ่มการสุ่ม</p>
-        </div>
-    </div>
+    <button class="btn-wish start-btn" onclick="startWish()">
+        ✦ START WISH ✦
+    </button>
 </div>
 
 <div id="resultScreen">
@@ -64,15 +56,9 @@
 </div> 
 
     <button class="btn-history-toggle" onclick="toggleHistory()">
-       📜 History
+    📜 History
     </button>
-    <button id="btnUpdate" class="btn-clear-cache" onclick="forceClearCache()">
-       🧹 Update
-    </button>
-    <button id="btnResetSystem" class="btn-reset-system" onclick="resetGame()">
-       ☢️ ล้างระบบ
-    </button>
-        
+
 <div id="historyModal" class="history-modal">
     <div class="history-content">
         <div class="history-header">
@@ -85,16 +71,7 @@
     </div>
 </div>
 
-<script type="module" src="script.js?v=2"></script>
+<script type="module" src="script.js"></script>
 
 </body>
-
 </html>
-
-
-
-
-
-
-
-
