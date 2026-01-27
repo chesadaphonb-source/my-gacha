@@ -455,37 +455,40 @@ input[type="text"]:focus {
 }
 
 .current-btn {
-    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); /* สีน้ำเงิน */
-    border: 1px solid #4a90e2;
+    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%) !important;
+    border: 1px solid #4a90e2 !important;
+    color: white !important;
     margin-bottom: 10px;
-    display: inline-block; /* เพื่อให้คุมขนาดได้แม่นยำ */
-    font-family: 'Kanit', sans-serif; /* ให้ font เหมือนส่วนอื่น */
-    box-shadow: 0 0 15px rgba(30, 60, 114, 0.5); /* เพิ่มแสงเรืองรองสีน้ำเงิน */
+    display: inline-block;
+    font-family: 'Kanit', sans-serif;
+    box-shadow: 0 0 15px rgba(30, 60, 114, 0.5);
+    padding: 12px 25px !important;
+    border-radius: 50px !important;
+    font-size: 14px !important;
 }
-
 .current-btn:hover {
     transform: translateY(-2px); /* เวลาชี้แล้วปุ่มลอยขึ้นนิดนึง */
     box-shadow: 0 0 20px rgba(74, 144, 226, 0.8);
 }
-
 .btn-reset-system {
-    background: transparent;
-    color: #ff4d4d;
-    border: 1px solid #ff4d4d;
-    padding: 8px 15px;
-    border-radius: 5px;
+    background: transparent !important;
+    color: #ff4d4d !important;
+    border: 1px solid #ff4d4d !important;
+    padding: 8px 15px !important;
+    border-radius: 5px !important;
     cursor: pointer;
-    margin-top: 30px; /* เว้นระยะห่างลงมาหน่อย */
-    font-size: 12px;
+    margin-top: 30px; 
+    font-size: 12px !important;
     opacity: 0.6;
     transition: 0.3s;
 }
 
 .btn-reset-system:hover {
-    background: #ff4d4d;
-    color: white;
+    background: #ff4d4d !important;
+    color: white !important;
     opacity: 1;
 }
+
 
 
 
