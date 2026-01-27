@@ -631,7 +631,7 @@ function refreshAdminUI() {
     const msgWaiting = document.getElementById('msgWaiting');
     const btnReset = document.getElementById('btnResetSystem');
     const btnUpdate = document.getElementById('btnUpdate');
-    const btnGoCurrent = document.getElementById('btnGoToCurrent');
+    const btnGoToCurrent = document.getElementById('btnGoToCurrent');
     const btnHistory = document.querySelector('.btn-history-toggle');
 
     if (isAdmin) {
@@ -641,12 +641,14 @@ function refreshAdminUI() {
         if(btnUpdate) btnUpdate.style.display = 'block';
         if(btnGoCurrent) btnGoCurrent.style.display = 'inline-block';
         if(btnHistory) btnHistory.style.display = 'block';
+        if(btnGoToCurrent) btnGoToCurrent.style.display = 'inline-block';
     } else {
         if(btnStart) btnStart.style.display = 'none';
         if(msgWaiting) msgWaiting.style.display = 'flex';
         if(btnReset) btnReset.style.display = 'none';
         if(btnUpdate) btnUpdate.style.display = 'none';
         if(btnGoCurrent) btnGoCurrent.style.display = 'none';
+        if(btnGoToCurrent) btnGoToCurrent.style.display = 'none';
     }
 }
 
@@ -659,3 +661,4 @@ document.addEventListener('DOMContentLoaded', () => {
         animate();
     }
 });
+
