@@ -454,5 +454,29 @@ input[type="text"]:focus {
     }
 }
 
+.current-btn {
+    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); /* สีน้ำเงิน */
+    border: 1px solid #4a90e2;
+    margin-bottom: 10px;
+}
+
+.btn-reset-system {
+    background: transparent;
+    color: #ff4d4d;
+    border: 1px solid #ff4d4d;
+    padding: 8px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-top: 30px; /* เว้นระยะห่างลงมาหน่อย */
+    font-size: 12px;
+    opacity: 0.6;
+    transition: 0.3s;
+}
+
+.btn-reset-system:hover {
+    background: #ff4d4d;
+    color: white;
+    opacity: 1;
+}
 
 
