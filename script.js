@@ -631,23 +631,23 @@ function refreshAdminUI() {
     const msgWaiting = document.getElementById('msgWaiting');
     const btnReset = document.getElementById('btnResetSystem');
     const btnUpdate = document.getElementById('btnUpdate');
-    const btnGoToCurrent = document.getElementById('btnGoToCurrent');
+    const btnGoToCurrent = document.getElementById('btnGoToCurrent'); // ใช้ ID ให้ตรงกับ HTML
     const btnHistory = document.querySelector('.btn-history-toggle');
 
     if (isAdmin) {
+        // 👑 ส่วนของ Admin
         if(btnStart) btnStart.style.display = 'inline-block';
         if(msgWaiting) msgWaiting.style.display = 'none';
         if(btnReset) btnReset.style.display = 'block';
         if(btnUpdate) btnUpdate.style.display = 'block';
-        if(btnGoCurrent) btnGoCurrent.style.display = 'inline-block';
+        if(btnGoToCurrent) btnGoToCurrent.style.display = 'inline-block'; // โชว์ปุ่มวาร์ป
         if(btnHistory) btnHistory.style.display = 'block';
-        if(btnGoToCurrent) btnGoToCurrent.style.display = 'inline-block';
     } else {
+        // 👤 ส่วนของ Viewer
         if(btnStart) btnStart.style.display = 'none';
         if(msgWaiting) msgWaiting.style.display = 'flex';
         if(btnReset) btnReset.style.display = 'none';
         if(btnUpdate) btnUpdate.style.display = 'none';
-        if(btnGoCurrent) btnGoCurrent.style.display = 'none';
         if(btnGoToCurrent) btnGoToCurrent.style.display = 'none';
     }
 }
@@ -661,4 +661,5 @@ document.addEventListener('DOMContentLoaded', () => {
         animate();
     }
 });
+
 
