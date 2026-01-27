@@ -429,5 +429,30 @@ input[type="text"]:focus {
     transform: scale(1.05);
 }
 
+/* --- อนิเมชั่นโดนดูดเข้าหาจุดศูนย์กลาง --- */
+.suck-in-animation {
+    pointer-events: none; /* ห้ามกดปุ่มระหว่างโดนดูด */
+    transform-origin: center center;
+    animation: blackHoleSuck 0.8s ease-in forwards;
+}
+
+@keyframes blackHoleSuck {
+    0% {
+        transform: scale(1) rotate(0deg);
+        filter: blur(0px);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(0.5) rotate(180deg);
+        filter: blur(4px);
+        opacity: 0.5;
+    }
+    100% {
+        transform: scale(0) rotate(720deg);
+        filter: blur(20px);
+        opacity: 0;
+    }
+}
+
 
 
