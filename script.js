@@ -55,45 +55,32 @@ const isAdmin = urlParams.get('admin') === 'true';
 /* ==========================================================================
    ส่วนที่ 2: Listener (ตัวรับคำสั่งจาก Cloud)
    ========================================================================== */
-onValue(gameRef, (snapshot) => {
-    const data = snapshot.val();
-    if (data) {
-        // 1. อัปเดตข้อมูลพื้นฐาน (เหมือนเดิม)
-        headers = data.headers || [];
-        participants = data.participants || [];
-        winnersHistory = data.history || {};
-        currentTier = data.currentTier || 0;
+onValue(ref(db, 'systemState'), (snapshot) => {
+    const state = snapshot.val();
+    if (!state) return;
 
-        // 2. ส่วนที่ต้อง "แก้" คือตรงนี้ครับ: 
-        // เราใช้ data.isSetupDone เป็นตัวตัดสินหลัก
-        if (data.isSetupDone) {
-            // ถ้า Setup เสร็จแล้ว -> ปิดหน้าใส่ลิงก์ทิ้งไปเลย แล้วเปิดหน้าสุ่ม
-            document.getElementById('setupContainer').style.display = 'none';
-            document.getElementById('mainScreen').style.display = 'block';
-            updateUI(); 
-        } else {
-            // ถ้ายังไม่เสร็จ (หรือโดน Reset) -> ให้โชว์แค่หน้าใส่ลิงก์
-            document.getElementById('setupContainer').style.display = 'block';
-            document.getElementById('mainScreen').style.display = 'none';
-            return; // หยุดการทำงานส่วนล่างไว้ก่อนจนกว่าจะโหลดข้อมูลเสร็จ
-        }
+    // ✅ ส่วนสำคัญ: ถ้าโหลดข้อมูลเสร็จแล้ว (isSetupDone เป็น true)
+    if (state.isSetupDone) {
+        document.getElementById('setupContainer').style.display = 'none'; // ซ่อนกล่องดำ
+        document.getElementById('mainScreen').style.display = 'block';    // โชว์หน้าสุ่ม
+    } else {
+        document.getElementById('setupContainer').style.display = 'block'; // โชว์กล่องดำ
+        document.getElementById('mainScreen').style.display = 'none';     // ซ่อนหน้าสุ่ม
+    }
 
-        // --- 3. ควบคุม Animation (ส่วนที่เหลือคงเดิม) ---
-        if (data.status === 'WARPING') {
-             if (!isWarping) { 
-                 starColor = data.activeColor;
-                 runWarpEffect(); 
-             }
-        } else if (data.status === 'SHOW_RESULT') {
-            stopWarpEffect();
-            const tier = prizes[currentTier];
-            if(data.lastRoundWinners) {
-                showResults(data.lastRoundWinners, tier);
-            }
-        } else if (data.status === 'IDLE') {
-             closeResult(); 
-             stopWarpEffect();
-        }
+    // ส่วนควบคุมปุ่ม Admin (โชว์เฉพาะเมื่อ setup เสร็จแล้ว)
+    const isAdmin = localStorage.getItem('wish_admin') === 'true';
+    if (isAdmin && state.isSetupDone) {
+        document.getElementById('btnGoToCurrent').style.display = 'inline-block';
+        document.getElementById('btnResetSystem').style.display = 'block';
+        document.getElementById('btnStart').style.display = 'inline-block';
+        document.getElementById('msgWaiting').style.display = 'none';
+    } else if (state.isSetupDone) {
+        // สำหรับ User ทั่วไป ซ่อนปุ่มกด
+        document.getElementById('btnGoToCurrent').style.display = 'none';
+        document.getElementById('btnResetSystem').style.display = 'none';
+        document.getElementById('btnStart').style.display = 'none';
+        document.getElementById('msgWaiting').style.display = 'flex';
     }
 });
 /* ==========================================================================
