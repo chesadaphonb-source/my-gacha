@@ -1,25 +1,25 @@
 /* ==========================================================================
-   ส่วนที่ 1: เชื่อมต่อ Server & ตั้งค่าพื้นฐาน (ห้ามลบ)
+   ส่วนที่ 1: เชื่อมต่อ Server & ตั้งค่าพื้นฐาน
    ========================================================================== */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getDatabase, ref, set, onValue, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-// ⚠️ Config Firebase ของคุณ (ตามที่ส่งมา)
+// ⚠️ Config Firebase ของคุณ
 const firebaseConfig = {
-  apiKey: "AIzaSyDGR3oHvEq9tDQu6hailtyO0Hj1tuMq89I",
-  authDomain: "gacha-gg.firebaseapp.com",
-  databaseURL: "https://gacha-gg-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "gacha-gg",
-  storageBucket: "gacha-gg.firebasestorage.app",
-  messagingSenderId: "873455879396",
-  appId: "1:873455879396:web:ed5893a7f10356fe8198f1",
-  measurementId: "G-21XKJM292C"
+    apiKey: "AIzaSyDGR3oHvEq9tDQu6hailtyO0Hj1tuMq89I",
+    authDomain: "gacha-gg.firebaseapp.com",
+    databaseURL: "https://gacha-gg-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "gacha-gg",
+    storageBucket: "gacha-gg.firebasestorage.app",
+    messagingSenderId: "873455879396",
+    appId: "1:873455879396:web:ed5893a7f10356fe8198f1",
+    measurementId: "G-21XKJM292C"
 };
 
 // เริ่มต้นระบบ
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
-const gameRef = ref(db, 'systemState'); // ใช้ Node 'systemState' เพื่อเก็บสถานะเกม
+const gameRef = ref(db, 'systemState');
 
 // --- ตรวจสอบสิทธิ์ Admin (จาก URL ?admin=true) ---
 const urlParams = new URLSearchParams(window.location.search);
@@ -28,7 +28,7 @@ if (urlParams.get('admin') === 'true') {
 }
 const isAdmin = localStorage.getItem('wish_admin') === 'true';
 
-// --- ⚠️ สำคัญมาก: เปิดฟังก์ชันให้ HTML เรียกใช้ได้ (Expose to Window) ---
+// --- Expose ฟังก์ชันให้ HTML เรียกใช้ได้ ---
 window.loadData = loadData;
 window.startWish = startWish;
 window.nextRound = nextRound;
@@ -41,7 +41,6 @@ window.forceClearCache = forceClearCache;
 window.goToLatestSession = goToLatestSession;
 
 // --- ตัวแปร Global ---
-// ปรับแก้ชื่อรางวัลและจำนวนตามต้องการได้ที่นี่
 const prizes = [
     { name: "รางวัลที่ 5 (20 บาท)", count: 50, color: "#33CC00" },
     { name: "รางวัลที่ 4 (50 บาท)", count: 30, color: "#99CCFF" },
@@ -58,10 +57,10 @@ let starColor = "#fff";
 let winnersHistory = {};
 
 /* ==========================================================================
-   ส่วนที่ 2: Listener (ตัวรับคำสั่งจาก Cloud เพื่อเปลี่ยนหน้าจอ)
+   ส่วนที่ 2: Listener (ตัวรับคำสั่งจาก Cloud)
    ========================================================================== */
 onValue(gameRef, (snapshot) => {
-    // 1. ปิดหน้า Loading Overlay ทันทีที่เชื่อมต่อ Firebase สำเร็จ
+    // 1. ปิดหน้า Loading Overlay
     const loader = document.getElementById('globalLoader');
     if (loader) loader.style.display = 'none';
 
@@ -70,16 +69,14 @@ onValue(gameRef, (snapshot) => {
     const mainScreen = document.getElementById('mainScreen');
     const audienceStandby = document.getElementById('audienceStandby');
 
-    // 2. ถ้าไม่มีข้อมูล หรือ Admin ยัง Setup ไม่เสร็จ
+    // 2. ถ้า Admin ยัง Setup ไม่เสร็จ
     if (!state || !state.isSetupDone) {
         if (isAdmin) {
-            // Admin: ให้เห็นหน้า Setup ตามปกติ
             if(setupContainer) setupContainer.style.display = 'block';
             if(mainScreen) mainScreen.style.display = 'none';
             if(audienceStandby) audienceStandby.style.display = 'none';
         } else {
-            // Audience: ให้เห็นหน้าเรดาร์ (Standby) แทนที่จะเห็นกล่อง URL
-            if(setupContainer) setupContainer.style.display = 'none'; // ซ่อน Setup
+            if(setupContainer) setupContainer.style.display = 'none';
             if(mainScreen) mainScreen.style.display = 'none';
             if(audienceStandby) audienceStandby.style.display = 'flex'; // โชว์เรดาร์
         }
@@ -88,20 +85,20 @@ onValue(gameRef, (snapshot) => {
 
     // 3. ถ้า Setup เสร็จแล้ว -> เข้าสู่หน้าเกม
     if(setupContainer) setupContainer.style.display = 'none';
-    if(audienceStandby) audienceStandby.style.display = 'none'; // ซ่อนเรดาร์
+    if(audienceStandby) audienceStandby.style.display = 'none';
     if(mainScreen) mainScreen.style.display = 'block';
 
-    // ... (โค้ดอัปเดตตัวแปร participants, headers ฯลฯ ของเดิมต่อจากตรงนี้) ...
+    // อัปเดตข้อมูล Local
     participants = state.participants || [];
     headers = state.headers || [];
     winnersHistory = state.history || {};
     currentTier = state.currentTier || 0;
     
-    // ... (ส่วนที่เหลือของฟังก์ชัน onValue เหมือนเดิม) ...
+    // อัปเดต UI และสถานะปุ่ม
     updateUI();
-    refreshAdminUI();
+    updateUIState(isAdmin); // ✅ เรียกใช้ฟังก์ชันจัดการปุ่มที่นี่
 
-    // Logic Animation (เหมือนเดิม)
+    // Logic Animation
     if (state.status === 'WARPING') {
          if (!isWarping) { 
              starColor = state.activeColor || '#fff';
@@ -163,8 +160,6 @@ function loadData() {
                 activeColor: '#fff',
                 timestamp: Date.now()
             });
-            
-            // ไม่ต้องทำอะไรต่อ onValue จะทำงานเอง
         })
         .catch(err => { 
             console.error(err); 
@@ -204,7 +199,7 @@ function performRaffle() {
     const tier = prizes[currentTier];
     const drawCount = Math.min(tier.count, participants.length);
     
-    // Fisher-Yates Shuffle (สุ่ม)
+    // Fisher-Yates Shuffle
     for (let i = participants.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [participants[i], participants[j]] = [participants[j], participants[i]];
@@ -217,7 +212,6 @@ function performRaffle() {
     if (!newHistory[tier.name]) newHistory[tier.name] = [];
     newHistory[tier.name].push(...winners);
 
-    // อัปเดตผลผู้ชนะและส่งขึ้น Cloud
     update(gameRef, {
         status: 'SHOW_RESULT',
         lastRoundWinners: winners,
@@ -225,18 +219,13 @@ function performRaffle() {
         history: newHistory
     });
 
-    // บันทึกลง Sheet (ถ้ามี Script)
     saveToSheet(winners, tier.name);
 }
 
 function nextRound() {
     if (!isAdmin) return;
-    
-    // ปิดหน้าผลรางวัล
     document.getElementById('resultScreen').style.display = 'none';
 
-    // ส่งคำสั่งเปลี่ยน Tier ขึ้น Firebase
-    // ระบบจะเปลี่ยนหน้าจอ User กลับไปหน้าสุ่มให้อัตโนมัติเพราะ onValue ทำงานอยู่
     update(gameRef, {
         status: 'IDLE',
         currentTier: currentTier + 1,
@@ -279,24 +268,25 @@ function updateUI() {
     poolCount.innerText = `คงเหลือผู้ลุ้นรางวัล: ${participants.length} คน`;
 }
 
-function refreshAdminUI() {
-    const btnStart = document.getElementById('btnStart');
+// ✅ ฟังก์ชันจัดการหน้าจอ Admin/Audience (อัปเดตใหม่ให้ตรงกับ HTML)
+function updateUIState(isAdmin) {
+    const startBtnContainer = document.getElementById('startBtnContainer');
+    const adminPanel = document.getElementById('adminPanel'); 
     const msgWaiting = document.getElementById('msgWaiting');
-    const btnReset = document.getElementById('btnResetSystem');
-    const btnGoToCurrent = document.getElementById('btnGoToCurrent');
-    const btnHistory = document.querySelector('.btn-history-toggle');
+    const btnHistory = document.querySelector('.btn-history-toggle'); // ปุ่ม History
 
     if (isAdmin) {
-        if(btnStart) btnStart.style.display = 'inline-block';
-        if(msgWaiting) msgWaiting.style.display = 'none';
-        if(btnReset) btnReset.style.display = 'block';
-        if(btnGoToCurrent) btnGoToCurrent.style.display = 'inline-block';
-        if(btnHistory) btnHistory.style.display = 'block';
+        // --- ADMIN VIEW ---
+        if (startBtnContainer) startBtnContainer.style.display = 'flex';
+        if (adminPanel) adminPanel.style.display = 'flex';
+        if (msgWaiting) msgWaiting.style.display = 'none';
+        if (btnHistory) btnHistory.style.display = 'block';
     } else {
-        if(btnStart) btnStart.style.display = 'none';
-        if(msgWaiting) msgWaiting.style.display = 'flex';
-        if(btnReset) btnReset.style.display = 'none';
-        if(btnGoToCurrent) btnGoToCurrent.style.display = 'none';
+        // --- AUDIENCE VIEW ---
+        if (startBtnContainer) startBtnContainer.style.display = 'none';
+        if (adminPanel) adminPanel.style.display = 'none';
+        if (msgWaiting) msgWaiting.style.display = 'flex';
+        if (btnHistory) btnHistory.style.display = 'none'; // ซ่อนปุ่ม History จากคนดูด้วย (ถ้าต้องการ)
     }
 }
 
@@ -305,14 +295,16 @@ function runWarpEffect() {
     const meteor = document.getElementById('meteor');
     const flash = document.getElementById('flashOverlay');
     const container = document.querySelector('.container');
-    const controls = document.querySelectorAll('.btn-wish, .btn-history-toggle, .btn-reset-system');
+    
+    // ซ่อน UI ระหว่าง Warp
+    const controls = document.querySelectorAll('.action-area, .admin-controls, .btn-history-toggle');
 
     if(container) container.classList.add('suck-in-animation');
     controls.forEach(el => el.classList.add('suck-in-animation'));
 
     setTimeout(() => {
         if(container) container.style.opacity = 0;
-        controls.forEach(el => el.style.display = 'none');
+        controls.forEach(el => el.style.opacity = 0);
     }, 700);
 
     if(meteor) { 
@@ -350,7 +342,7 @@ function showResults(winners, tier) {
         const headerDiv = document.createElement('div');
         headerDiv.className = 'card-header';
         headerDiv.style.background = tier.color;
-        headerDiv.textContent = winner[headers[0]] || "ID"; // ใช้คอลัมน์แรกเป็นหัว
+        headerDiv.textContent = winner[headers[0]] || "ID"; 
         card.appendChild(headerDiv);
 
         const bodyDiv = document.createElement('div');
@@ -359,10 +351,9 @@ function showResults(winners, tier) {
         const mainInfo = document.createElement('div');
         mainInfo.className = 'info-main';
         mainInfo.style.color = tier.color;
-        mainInfo.textContent = winner[headers[1]] || ""; // ใช้คอลัมน์สองเป็นชื่อหลัก
+        mainInfo.textContent = winner[headers[1]] || ""; 
         bodyDiv.appendChild(mainInfo);
 
-        // แสดงข้อมูลที่เหลือ
         for(let k=2; k < headers.length; k++) {
             const val = winner[headers[k]];
             if(val && val !== "-") {
@@ -373,19 +364,16 @@ function showResults(winners, tier) {
             }
         }
         card.appendChild(bodyDiv);
-        grid.appendChild(card);    
+        grid.appendChild(card);     
     });
 
     document.getElementById('resultScreen').style.display = 'flex';
-    const btnNext = document.getElementById('btnNextPrize'); // เรียกหาปุ่มจาก ID ที่เราเพิ่งตั้ง
+    const btnNext = document.getElementById('btnNextPrize'); 
     
     if (btnNext) {
-        // ถ้าเป็น Admin และ "ไม่ใช่" รางวัลสุดท้าย -> ให้โชว์ปุ่ม
-        // (prizes.length - 1 คือ index ของรางวัลสุดท้าย)
         if (isAdmin && currentTier < prizes.length - 1) {
             btnNext.style.display = 'inline-block';
         } else {
-            // ถ้าเป็น User หรือ แจกครบแล้ว -> ซ่อนปุ่ม
             btnNext.style.display = 'none';
         }
     }
@@ -397,7 +385,6 @@ function closeResult() {
 }
 
 function goToLatestSession() {
-    // ล้าง Animation กลับสู่สภาพปกติ
     const suckedElements = document.querySelectorAll('.suck-in-animation');
     suckedElements.forEach(el => {
         el.classList.remove('suck-in-animation');
@@ -405,6 +392,10 @@ function goToLatestSession() {
         el.style.transform = '';
         el.style.filter = '';
     });
+    
+    // คืนค่า Opacity ให้ปุ่มควบคุม
+    const controls = document.querySelectorAll('.action-area, .admin-controls, .btn-history-toggle');
+    controls.forEach(el => el.style.opacity = 1);
 
     document.getElementById('resultScreen').style.display = 'none';
     const container = document.getElementById('mainScreen');
@@ -412,7 +403,7 @@ function goToLatestSession() {
         container.style.display = 'block';
         container.style.opacity = 1;
     }
-    refreshAdminUI();
+    updateUIState(isAdmin); // รีเช็คสถานะปุ่มอีกครั้ง
 }
 
 /* ==========================================================================
@@ -420,54 +411,78 @@ function goToLatestSession() {
    ========================================================================== */
 function toggleHistory() {
     const modal = document.getElementById('historyModal');
-    const list = document.getElementById('historyList');
-
-    if (modal.style.display === 'flex') {
-        modal.style.display = 'none';
-    } else {
-        // สร้าง Tab History
-        const activePrizes = prizes.filter(p => winnersHistory[p.name] && winnersHistory[p.name].length > 0);
-        if (activePrizes.length === 0) {
-            list.innerHTML = `<p style="text-align:center; color:#888; margin-top:50px;">ยังไม่มีการจับรางวัล</p>`;
-        } else {
-            let tabsHtml = `<div class="history-tabs" id="tabsContainer">`;
-            let contentHtml = `<div class="history-content-wrapper">`;
-
-            activePrizes.forEach((prize, index) => {
-                const isActive = index === 0 ? 'active' : '';
-                const winners = winnersHistory[prize.name];
-                tabsHtml += `<button class="tab-btn ${isActive}" onclick="switchTab(event, 'tab-${index}')">${prize.name} <span>(${winners.length})</span></button>`;
-                contentHtml += `
-                    <div id="tab-${index}" class="tab-content ${isActive}">
-                        <div style="text-align:right; margin-bottom:10px; padding:0 20px;">
-                            <button onclick="copyToClipboard('${prize.name}')" style="background:#4a90e2; color:white; border:none; padding:5px 15px; border-radius:5px; cursor:pointer;">📋 Copy รายชื่อ</button>
-                        </div>
-                `;
-                winners.forEach(w => {
-                    const name = w[headers[1]] || "ไม่ระบุชื่อ";
-                    const info = w[headers[2]] || "-"; 
-                    contentHtml += `<div class="history-item searchable-item">${name} <span>${info}</span></div>`;
-                });
-                contentHtml += `</div>`;
-            });
-            tabsHtml += `</div>`;
-            contentHtml += `</div>`;
-            
-            // Search Box
-            const searchHtml = `
-                <div style="padding: 10px 20px; text-align: center;">
-                    <input type="text" id="historySearchInput" onkeyup="filterHistory()" placeholder="🔍 พิมพ์ชื่อเพื่อค้นหา..." 
-                    style="width: 100%; max-width: 400px; padding: 10px; border-radius: 20px; border: 1px solid #555; background: #222; color: #fff; text-align: center;">
-                </div>
-            `;
-            list.innerHTML = tabsHtml + searchHtml + contentHtml;
-        }
+    // ถ้าปิดอยู่ -> เปิด
+    if (modal.style.display === 'none' || modal.style.display === '') {
+        renderHistory(); // เรียกฟังก์ชันวาดเนื้อหา
         modal.style.display = 'flex';
+    } else {
+        modal.style.display = 'none';
     }
 }
 
-// ฟังก์ชันสลับ Tab (ต้อง attach window)
-window.switchTab = function(event, tabId) {                                             
+// แยกฟังก์ชัน Render ออกมาเพื่อความสะอาด
+function renderHistory() {
+    const list = document.getElementById('historyList');
+    const tabsContainer = document.getElementById('historyTabs');
+
+    // 1. สร้าง Tab
+    const activePrizes = prizes.filter(p => winnersHistory[p.name] && winnersHistory[p.name].length > 0);
+    
+    if (activePrizes.length === 0) {
+        if(tabsContainer) tabsContainer.innerHTML = '';
+        list.innerHTML = `<p style="text-align:center; color:#888; margin-top:50px;">ยังไม่มีการจับรางวัล</p>`;
+        return;
+    }
+
+    let tabsHtml = '';
+    let contentHtml = '';
+
+    activePrizes.forEach((prize, index) => {
+        const isActive = index === 0 ? 'active' : '';
+        const winners = winnersHistory[prize.name];
+        
+        // ปุ่ม Tab
+        tabsHtml += `<button class="tab-btn ${isActive}" onclick="switchTab(event, 'tab-${index}')">${prize.name} <span>(${winners.length})</span></button>`;
+        
+        // เนื้อหาใน Tab
+        contentHtml += `<div id="tab-${index}" class="tab-content ${isActive}">`;
+        
+        // ปุ่ม Copy
+        contentHtml += `
+            <div style="text-align:right; margin-bottom:10px; position:sticky; top:0; background:#111; padding:5px; z-index:10;">
+                <button onclick="copyToClipboard('${prize.name}')" style="background:#4a90e2; color:white; border:none; padding:5px 15px; border-radius:5px; cursor:pointer;">📋 Copy All</button>
+            </div>
+        `;
+        
+        // รายชื่อ
+        winners.forEach(w => {
+            const name = w[headers[1]] || "ไม่ระบุชื่อ";
+            const info = w[headers[2]] || "-"; 
+            contentHtml += `<div class="history-item searchable-item">${name} <span>${info}</span></div>`;
+        });
+        contentHtml += `</div>`;
+    });
+
+    // ยัด HTML ลง Element (แยกกล่อง Tab กับ Content)
+    if(tabsContainer) tabsContainer.innerHTML = tabsHtml;
+    list.innerHTML = contentHtml;
+
+    // เพิ่ม Search Box (ถ้ายังไม่มี)
+    let searchBox = document.getElementById('historySearchBox');
+    if (!searchBox) {
+        searchBox = document.createElement('div');
+        searchBox.id = 'historySearchBox';
+        searchBox.style.padding = '10px 20px';
+        searchBox.innerHTML = `
+            <input type="text" id="historySearchInput" onkeyup="filterHistory()" placeholder="🔍 พิมพ์ชื่อเพื่อค้นหา..." 
+            style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #555; background: #222; color: #fff;">
+        `;
+        // แทรก Search Box ไว้ก่อนหน้า list
+        list.parentElement.insertBefore(searchBox, list);
+    }
+}
+
+window.switchTab = function(event, tabId) {                                           
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     event.currentTarget.classList.add('active');
     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
@@ -482,7 +497,7 @@ function copyToClipboard(rankName) {
     winners.forEach(w => {
         text += `${w[headers[0]]}\t${w[headers[1]]}\t${w[headers[2]] || ""}\n`;
     });
-    navigator.clipboard.writeText(text).then(() => alert("คัดลอกแล้ว!"));
+    navigator.clipboard.writeText(text).then(() => alert("คัดลอกรายชื่อเรียบร้อย!"));
 }
 
 function filterHistory() {
@@ -503,9 +518,9 @@ function forceClearCache() {
 }
 
 // --- Google Sheet Logging (Optional) ---
-const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby_BJhSpOljb4B0rgocuzrV-ehaiL9Tq5yCWkJcAFiL85cGYUTGb5RF7jvczH99B7Ie0g/exec"; 
+const GOOGLE_SCRIPT_URL = ""; 
 function saveToSheet(winners, rankName) {
-    if(!isAdmin) return; 
+    if(!isAdmin || !GOOGLE_SCRIPT_URL) return; 
     const dataToSend = {
         rank: rankName,
         winners: winners.map(w => ({
@@ -560,34 +575,3 @@ if (canvas) {
     }
     animate();
 }
-
-// ฟังก์ชันปรับหน้าจอตามสถานะ (Admin หรือ คนดู)
-function updateUIState(isAdmin) {
-    const startBtnContainer = document.getElementById('startBtnContainer');
-    const adminPanel = document.getElementById('adminPanel'); // กลุ่มปุ่ม Re-Sync & Reset
-    const msgWaiting = document.getElementById('msgWaiting');
-
-    if (isAdmin) {
-        // --- ถ้าเป็น ADMIN ---
-        // 1. โชว์ปุ่ม Start
-        if (startBtnContainer) startBtnContainer.style.display = 'flex';
-        // 2. โชว์ปุ่มควบคุม (Reset/Re-Sync)
-        if (adminPanel) adminPanel.style.display = 'flex';
-        // 3. ซ่อนข้อความ Waiting
-        if (msgWaiting) msgWaiting.style.display = 'none';
-        
-    } else {
-        // --- ถ้าเป็น AUDIENCE (คนดู) ---
-        // 1. ซ่อนปุ่ม Start
-        if (startBtnContainer) startBtnContainer.style.display = 'none';
-        // 2. ซ่อนปุ่มควบคุมทั้งหมด
-        if (adminPanel) adminPanel.style.display = 'none';
-        // 3. โชว์ข้อความ Waiting พร้อมตัวหมุนๆ
-        if (msgWaiting) {
-            msgWaiting.style.display = 'flex'; 
-            // msgWaiting จะแสดงผลเป็น Flex เพื่อจัดตัวหมุนให้อยู่กึ่งกลางกับข้อความ
-        }
-    }
-}
-
-
