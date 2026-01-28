@@ -1,10 +1,26 @@
-/* --- ตั้งค่าธีม Space --- */
+/* =================================================================
+   1. CORE VARIABLES & BASE STYLES
+   ================================================================= */
 :root {
     --bg-dark: #0c0c10;
     --card-bg: #2a2a35;
     --gold: #e4d6a7;
     --gold-dark: #d4c188;
-    --control-bar-height: 80px;
+    --neon-blue: #4a90e2;
+    --neon-red: #ff4d4d;
+    --glass-bg: rgba(255, 255, 255, 0.03);
+    --glass-border: rgba(255, 255, 255, 0.1);
+    
+    /* Z-Index Hierarchy (ลำดับชั้น) */
+    --z-bg: -1;
+    --z-content: 10;
+    --z-meteor: 50;
+    --z-result: 100;
+    --z-controls: 200;
+    --z-flash: 900;
+    --z-history-btn: 1000;
+    --z-history-modal: 2000;
+    --z-loader: 9999;
 }
 
 body {
@@ -12,76 +28,94 @@ body {
     font-family: 'Kanit', sans-serif;
     background-color: var(--bg-dark);
     color: #fff;
-    overflow: hidden; /* ห้ามสกรอลล์ที่ Body */
+    overflow: hidden; /* ห้ามสกรอลล์ที่ Body หลัก */
     height: 100vh;
     display: flex;
     justify-content: center;
     align-items: center;
 }
 
-/* --- Background Stars --- */
+/* Scrollbar สวยๆ ใช้ร่วมกันทั้งเว็บ */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #1e1e24; }
+::-webkit-scrollbar-thumb { background: #555; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #777; }
+
+/* =================================================================
+   2. BACKGROUND & ANIMATIONS (Stars, Meteors)
+   ================================================================= */
 #starCanvas {
     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    z-index: -1;
+    z-index: var(--z-bg);
     background: radial-gradient(circle at center, #1b2735 0%, #090a0f 100%);
 }
 
-/* --- Meteor Animation (ลูกไฟพุ่งชน) --- */
 #meteor {
     position: fixed; top: 50%; left: 50%;
     transform: translate(-50%, -50%) scale(0);
     width: 20px; height: 20px;
     background: #fff;
     border-radius: 50%;
-    z-index: 500;
+    z-index: var(--z-meteor);
     opacity: 0;
     pointer-events: none;
     box-shadow: 0 0 30px 10px currentColor, 0 0 60px 30px white; 
 }
+.meteor-falling { animation: meteorFall 1.5s ease-in forwards; }
 
-.meteor-falling {
-    animation: meteorFall 1.5s ease-in forwards;
-}
-
-@keyframes meteorFall {
-    0% { transform: translate(-50%, -50%) scale(0); opacity: 0; color: #fff; }
-    20% { opacity: 1; }
-    70% { transform: translate(-50%, -50%) scale(2); color: currentColor; }
-    100% { transform: translate(-50%, -50%) scale(50); opacity: 0; color: currentColor; }
-}
-
-/* --- Flash Overlay --- */
 #flashOverlay { 
     position: fixed; top:0; left:0; width:100%; height:100%; 
-    background: white; z-index: 999; pointer-events: none; opacity: 0; transition: opacity 0.5s; 
+    background: white; z-index: var(--z-flash); pointer-events: none; opacity: 0; transition: opacity 0.5s; 
 }
 
-/* --- UI Containers --- */
+/* =================================================================
+   3. LAYOUT CONTAINERS & GLASS PANELS
+   ================================================================= */
 .container {
-    z-index: 10; text-align: center; width: 90%; max-width: 800px;
+    z-index: var(--z-content); 
+    text-align: center; 
+    width: 90%; max-width: 800px;
     transition: opacity 0.5s;
 }
 
+/* กล่อง Setup */
 .setup-box {
     background: rgba(0,0,0,0.7); padding: 30px; 
     border-radius: 20px; border: 1px solid #444;
     backdrop-filter: blur(10px);
 }
 
+/* กล่องกระจก (Glass Panel) สำหรับหน้าหลัก */
+.glass-panel {
+    background: var(--glass-bg);
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--glass-border);
+    border-radius: 24px;
+    padding: 40px 20px;
+    margin-bottom: 30px;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+    display: flex; flex-direction: column; align-items: center; gap: 20px;
+}
+
+/* =================================================================
+   4. UI ELEMENTS (Text, Inputs, Buttons)
+   ================================================================= */
 .gold-text { color: var(--gold); margin-bottom: 5px; }
 .sub-text { color: #aaa; font-size: 14px; margin-bottom: 20px; }
 
+/* Input Fields */
 input[type="text"] {
     width: 80%; padding: 15px; border-radius: 10px; border: 1px solid #555;
     background: rgba(0,0,0,0.5); color: white; text-align: center; font-size: 16px;
-    margin-bottom: 20px;
-    outline: none; /* ลบเส้นขอบเวลาคลิก */
+    margin-bottom: 20px; outline: none; transition: 0.3s;
 }
 input[type="text"]:focus {
-    border-color: var(--gold);
-    background: rgba(0,0,0,0.8);
+    border-color: var(--gold); background: rgba(0,0,0,0.8);
 }
 
+/* --- BUTTONS SYSTEM --- */
+
+/* ปุ่มหลัก (Start Wish) */
 .btn-wish {
     background: linear-gradient(180deg, var(--gold) 0%, var(--gold-dark) 100%);
     color: #3b4255;
@@ -91,13 +125,64 @@ input[type="text"]:focus {
     white-space: nowrap; transition: transform 0.1s;
 }
 .btn-wish:active { transform: scale(0.95); }
+.start-btn { font-size: 24px; padding: 20px 60px; }
 
-.start-btn { font-size: 24px; padding: 20px 60px; margin-top: 20px; }
+/* ปุ่มรอง (Secondary / Back) */
+.btn-secondary {
+    background: transparent; border: 1px solid #777; color: #ddd; 
+    font-size: 16px; padding: 10px 25px; border-radius: 50px; cursor: pointer;
+    transition: 0.3s;
+}
+.btn-secondary:hover { border-color: #fff; color: #fff; background: rgba(255,255,255,0.1); }
 
-/* --- Result Screen --- */
+/* ปุ่ม Next (ไปต่อ) */
+.btn-next {
+    background: linear-gradient(90deg, #1e3c72 0%, #2a5298 100%);
+    border: 1px solid var(--neon-blue); color: #fff;
+    padding: 10px 30px; border-radius: 50px;
+    font-size: 16px; font-weight: bold; cursor: pointer;
+    box-shadow: 0 0 15px rgba(74, 144, 226, 0.4);
+    margin-left: 15px; transition: 0.3s;
+}
+.btn-next:hover { transform: scale(1.05); box-shadow: 0 0 25px rgba(74, 144, 226, 0.8); }
+
+/* ปุ่ม Admin (Ghost Style) */
+.admin-controls {
+    display: flex; justify-content: center; align-items: center; gap: 15px;
+    opacity: 0.6; transition: opacity 0.3s ease;
+}
+.admin-controls:hover { opacity: 1; }
+
+.btn-admin {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: #aaa; font-size: 12px; padding: 8px 16px;
+    border-radius: 50px; cursor: pointer; transition: all 0.2s;
+    text-transform: uppercase; letter-spacing: 1px;
+}
+.btn-admin:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff; border-color: #fff; transform: translateY(-2px);
+}
+.btn-admin.btn-danger:hover {
+    border-color: var(--neon-red); color: var(--neon-red);
+    background: rgba(255, 77, 77, 0.1); box-shadow: 0 0 15px rgba(255, 77, 77, 0.2);
+}
+
+/* ปุ่ม Re-Sync (สีฟ้าเด่น) */
+.btn-resync {
+    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+    border: 1px solid var(--neon-blue); color: white;
+    box-shadow: 0 0 15px rgba(30, 60, 114, 0.5);
+}
+.btn-resync:hover { box-shadow: 0 0 20px rgba(74, 144, 226, 0.8); }
+
+/* =================================================================
+   5. SCREENS: RESULT SCREEN
+   ================================================================= */
 #resultScreen {
     display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(12, 12, 16, 0.95); z-index: 100;
+    background: rgba(12, 12, 16, 0.95); z-index: var(--z-result);
     flex-direction: column;
 }
 
@@ -109,545 +194,165 @@ input[type="text"]:focus {
 
 .result-content {
     flex: 1 1 auto; overflow-y: auto;
-    padding: 10px 20px 100px 20px; /* Padding ล่างเยอะหน่อยกันปุ่มบัง */
+    padding: 10px 20px 100px 20px; /* Padding ล่างเผื่อปุ่มบัง */
     -webkit-overflow-scrolling: touch;
 }
 
 .result-grid {
     display: grid;
-    /* ปรับเป็น 140px เพื่อให้จอมือถือเล็กๆ (320px+) แสดง 2 แถวได้ */
     grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); 
-    gap: 15px;
-    max-width: 1200px; margin: 0 auto;
+    gap: 15px; max-width: 1200px; margin: 0 auto;
 }
 
-/* --- Card Styles --- */
 .card {
     background: linear-gradient(135deg, #2a2a35 0%, #1c1c22 100%);
     border-radius: 10px; overflow: hidden;
     border: 2px solid #444;
     box-shadow: 0 4px 10px rgba(0,0,0,0.3);
     display: flex; flex-direction: column;
-    min-height: 250px; 
+    min-height: 200px; /* ลดความสูงลงหน่อยให้ดูดีบนมือถือ */
     animation: popIn 0.4s ease-out backwards;
 }
-
-.card-header {
-    background: #444; padding: 8px;
-    font-size: clamp(16px, 4vw, 20px); font-weight: 800; text-align: center; color: #000;
-}
-
-.card-body {
-    padding: 15px 10px;
-    flex-grow: 1; display: flex; flex-direction: column; 
-    justify-content: center; text-align: center; gap: 5px;
-}
-
-.info-main { font-size: clamp(14px, 3.5vw, 18px); font-weight: bold; color: #fff; margin-bottom: 5px; line-height: 1.3; }
-.info-sub { font-size: 12px; color: #bbb; white-space: normal; word-wrap: break-word; line-height: 1.4; }
+.card-header { background: #444; padding: 8px; font-weight: 800; text-align: center; color: #000; }
+.card-body { padding: 15px 10px; flex-grow: 1; display: flex; flex-direction: column; justify-content: center; text-align: center; gap: 5px; }
+.info-main { font-size: clamp(14px, 3.5vw, 18px); font-weight: bold; color: #fff; margin-bottom: 5px; }
+.info-sub { font-size: 12px; color: #bbb; word-wrap: break-word; }
 
 .control-bar {
-    position: fixed; bottom: 0; left: 0; width: 100%; height: var(--control-bar-height);
+    position: fixed; bottom: 0; left: 0; width: 100%; height: 80px;
     background: rgba(20, 20, 30, 0.95); border-top: 1px solid #444;
     display: flex; justify-content: center; align-items: center; gap: 20px;
-    backdrop-filter: blur(5px); z-index: 200;
+    backdrop-filter: blur(5px); z-index: var(--z-controls);
 }
 
-.btn-secondary {
-    background: transparent; border: 1px solid #777; color: #ddd; 
-    font-size: 16px; padding: 10px 25px; border-radius: 50px; cursor: pointer;
-}
-.btn-secondary:hover { border-color: #fff; color: #fff; background: rgba(255,255,255,0.1); }
-
-@keyframes popIn { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-
-/* --- History Button (ปุ่มมุมขวาบน) --- */
+/* =================================================================
+   6. SCREENS: HISTORY MODAL & BUTTON
+   ================================================================= */
 .btn-history-toggle {
-    position: fixed; 
-    top: 20px; 
-    right: 20px; 
-    background: rgba(255, 255, 255, 0.1);
-    color: #ffd700; 
-    border: 2px solid #ffd700;
-    padding: 12px 25px; 
-    border-radius: 50px;
-    cursor: pointer; 
-    z-index: 1000; /* ✅ ลดลงจาก 9999 ให้ต่ำกว่า Modal (2000) ไม่งั้นปุ่มจะลอยบัง */
-    font-family: 'Kanit', sans-serif;
-    font-size: 16px;
-    font-weight: bold;
-    backdrop-filter: blur(5px);
-    box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+    position: fixed; top: 20px; right: 20px; 
+    background: rgba(255, 255, 255, 0.1); color: #ffd700; border: 2px solid #ffd700;
+    padding: 12px 25px; border-radius: 50px; cursor: pointer; 
+    z-index: var(--z-history-btn);
+    font-weight: bold; backdrop-filter: blur(5px); box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
     transition: all 0.3s;
 }
+.btn-history-toggle:hover { background: #ffd700; color: #000; transform: scale(1.05); }
 
-.btn-history-toggle:hover {
-    background: #ffd700; 
-    color: #000;
-    transform: scale(1.05);
-}
-
-/* =================================================================
-   ✅ CSS ชุดซ่อม: HISTORY MODAL
-   ================================================================= */
-
-/* 1. พื้นหลัง Modal */
 .history-modal {
-    display: none;
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0, 0, 0, 0.85);
-    z-index: 2000; /* ✅ สูงกว่าปุ่ม Toggle */
-    justify-content: center; align-items: center;
-    backdrop-filter: blur(10px);
+    display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.85); z-index: var(--z-history-modal);
+    justify-content: center; align-items: center; backdrop-filter: blur(10px);
 }
-
-/* 2. กล่องการ์ดหลัก */
 .history-content {
-    background: #1e1e24;
-    width: 95%;           
-    max-width: 700px;     
-    max-height: 85vh;     
-    border-radius: 15px;
-    border: 1px solid #444;
-    box-shadow: 0 10px 40px rgba(0,0,0,0.6);
-    
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;     
-    animation: fadeIn 0.3s;
+    background: #1e1e24; width: 95%; max-width: 700px; max-height: 85vh;
+    border-radius: 15px; border: 1px solid #444; box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+    display: flex; flex-direction: column; overflow: hidden; animation: fadeIn 0.3s;
 }
 
-@keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
-
-/* 3. ส่วนหัว */
-.history-header {
-    padding: 15px 20px;
-    background: #25252d;
-    border-bottom: 1px solid #333;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-shrink: 0; 
-}
-.history-header h2 { margin: 0; color: #e4d6a7; font-size: 22px; }
-
-.close-btn {
-    background: none; border: none; color: #888; font-size: 28px; cursor: pointer; padding: 0; line-height: 1;
-}
+/* Header & Tabs */
+.history-header { padding: 15px 20px; background: #25252d; border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: center; }
+.history-header h2 { margin: 0; color: var(--gold); font-size: 22px; }
+.close-btn { background: none; border: none; color: #888; font-size: 28px; cursor: pointer; }
 .close-btn:hover { color: #fff; }
 
-/* 4. ส่วนลำตัว */
-.history-body {
-    display: flex;
-    flex-direction: column;
-    flex: 1;              
-    min-height: 0;        
-    background: #1e1e24;
-    overflow: hidden;     
-}
-
-/* 5. แถบเมนูแท็บ */
 .history-tabs {
-    display: flex;
-    gap: 8px;
-    padding: 0 15px;
-    background: #1e1e24;
-    border-bottom: 2px solid #2a2a35;
-    
-    overflow-x: auto;     
-    white-space: nowrap;
-    flex-shrink: 0;       
-    
-    -ms-overflow-style: none; scrollbar-width: none;
-    cursor: grab; user-select: none;
+    display: flex; gap: 8px; padding: 0 15px; background: #1e1e24; border-bottom: 2px solid #2a2a35;
+    overflow-x: auto; white-space: nowrap; scrollbar-width: none;
 }
-.history-tabs::-webkit-scrollbar { display: none; }
-.history-tabs.dragging { cursor: grabbing; }
-
 .tab-btn {
-    background: transparent; border: none; color: #777;
-    padding: 15px 10px;
-    font-family: 'Kanit', sans-serif; font-size: 15px; font-weight: 600;
-    cursor: pointer; position: relative; transition: 0.2s;
+    background: transparent; border: none; color: #777; padding: 15px 10px;
+    font-size: 15px; font-weight: 600; cursor: pointer; position: relative;
 }
-.tab-btn:hover { color: #fff; }
-.tab-btn.active { color: #e4d6a7; opacity: 1; }
+.tab-btn.active { color: var(--gold); }
 .tab-btn.active::after {
-    content: ''; position: absolute; bottom: -2px; left: 0;
-    width: 100%; height: 3px; background: #e4d6a7; border-radius: 3px 3px 0 0;
+    content: ''; position: absolute; bottom: -2px; left: 0; width: 100%; height: 3px;
+    background: var(--gold); border-radius: 3px 3px 0 0;
 }
 
-/* 6. พื้นที่แสดงรายชื่อ */
-.history-content-wrapper {
-    flex-grow: 1;         
-    overflow-y: auto;     
-    padding: 10px 0;
-    
-    scrollbar-width: thin;
-    scrollbar-color: #444 #1e1e24;
-}
-.history-content-wrapper::-webkit-scrollbar { width: 6px; }
-.history-content-wrapper::-webkit-scrollbar-track { background: #1e1e24; }
-.history-content-wrapper::-webkit-scrollbar-thumb { background: #555; border-radius: 4px; }
-
+/* History Items */
+.history-content-wrapper { flex-grow: 1; overflow-y: auto; padding: 10px 0; }
 .tab-content { display: none; }
 .tab-content.active { display: block; }
-
-/* 7. รายการชื่อ */
 .history-item {
-    padding: 12px 20px;
-    border-bottom: 1px solid #2f2f38;
-    display: flex;
-    justify-content: space-between; 
-    align-items: flex-start;        
-    font-size: 15px;
+    padding: 12px 20px; border-bottom: 1px solid #2f2f38;
+    display: flex; justify-content: space-between; align-items: flex-start;
+    color: #eee; font-weight: 500; font-size: 15px;
 }
-.history-item:hover { background: rgba(255,255,255,0.02); }
-.history-item:last-child { border-bottom: none; }
-
-.history-item { color: #eee; font-weight: 500; }
-
-.history-item span {
-    text-align: right;
-    color: #999;
-    font-size: 14px;
-    font-weight: normal;
-    padding-left: 15px;
-    white-space: normal;
-    max-width: 50%;
-    word-break: break-word;
-    
-}
-/* --- Waiting Message (รอ Admin) --- */
-#msgWaiting {
-    display: none; /* JS จะเปลี่ยนเป็น flex */
-    justify-content: center;
-    align-items: center;
-    position: relative;
-    padding: 20px 40px;
-    margin-top: 30px;
-    
-    /* ฟอนต์แบบ Terminal */
-    font-family: 'Courier New', Courier, monospace; 
-    color: #00f2ff;
-    font-size: 1.1rem;
-    font-weight: bold;
-    text-transform: uppercase;
-    letter-spacing: 2px;
-    
-    background: rgba(0, 20, 40, 0.6);
-    border: 1px solid #00f2ff;
-    border-radius: 4px; /* ทรงเหลี่ยมจะดูเป็นเครื่องจักรมากกว่า */
-    overflow: hidden;
-    box-shadow: inset 0 0 15px rgba(0, 242, 255, 0.2), 0 0 20px rgba(0, 242, 255, 0.1);
-}
-
-/* --- เส้น Scanline วิ่งขึ้นลง --- */
-#msgWaiting::before {
-    content: "";
-    position: absolute;
-    top: 0; left: 0; width: 100%; height: 2px;
-    background: rgba(0, 242, 255, 0.5);
-    box-shadow: 0 0 10px #00f2ff;
-    animation: scanning 3s linear infinite;
-    z-index: 1;
-}
-
-@keyframes scanning {
-    0% { top: 0%; }
-    100% { top: 100%; }
-}
-
-/* --- อนิเมชั่นตัวหนังสือกระพริบเหมือนสัญญาณขาดๆหายๆ --- */
-#msgWaiting {
-    animation: textFlicker 2s infinite;
-}
-
-@keyframes textFlicker {
-    0%, 100% { opacity: 1; }
-    92% { opacity: 1; }
-    93% { opacity: 0.5; }
-    94% { opacity: 1; }
-    96% { opacity: 0.3; }
-    97% { opacity: 1; }
-}
-
-/* --- จุดไฟสีแดง Status: Offline/Waiting --- */
-#msgWaiting::after {
-    content: "●";
-    margin-left: 15px;
-    color: #ff4d4d;
-    text-shadow: 0 0 10px #ff4d4d;
-    animation: blink 1s steps(2) infinite;
-}
-
-@keyframes blink {
-    0% { opacity: 0; }
-    100% { opacity: 1; }
-}
+.history-item span { color: #999; font-size: 14px; font-weight: normal; }
 
 /* =================================================================
-   ✅ ส่วนที่เพิ่ม: ปุ่ม Reset System (Admin Only)
+   7. SCREENS: LOADING & STANDBY (AUDIENCE)
    ================================================================= */
-/* --- อนิเมชั่นโดนดูดเข้าหาจุดศูนย์กลาง --- */
-.suck-in-animation {
-    pointer-events: none; /* ห้ามกดปุ่มระหว่างโดนดูด */
-    transform-origin: center center;
-    animation: blackHoleSuck 0.8s ease-in forwards;
-}
-
-@keyframes blackHoleSuck {
-    0% {
-        transform: scale(1) rotate(0deg);
-        filter: blur(0px);
-        opacity: 1;
-    }
-    50% {
-        transform: scale(0.5) rotate(180deg);
-        filter: blur(4px);
-        opacity: 0.5;
-    }
-    100% {
-        transform: scale(0) rotate(720deg);
-        filter: blur(20px);
-        opacity: 0;
-    }
-}
-
-.current-btn {
-    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%) !important;
-    border: 1px solid #4a90e2 !important;
-    color: white !important;
-    margin-bottom: 10px;
-    display: inline-block;
-    font-family: 'Kanit', sans-serif;
-    box-shadow: 0 0 15px rgba(30, 60, 114, 0.5);
-    padding: 12px 25px !important;
-    border-radius: 50px !important;
-    font-size: 14px !important;
-}
-.current-btn:hover {
-    transform: translateY(-2px); /* เวลาชี้แล้วปุ่มลอยขึ้นนิดนึง */
-    box-shadow: 0 0 20px rgba(74, 144, 226, 0.8);
-}
-.btn-reset-system {
-    background: transparent !important;
-    color: #ff4d4d !important;
-    border: 1px solid #ff4d4d !important;
-    padding: 8px 15px !important;
-    border-radius: 5px !important;
-    cursor: pointer;
-    margin-top: 30px; 
-    font-size: 12px !important;
-    opacity: 0.6;
-    transition: 0.3s;
-}
-
-.btn-reset-system:hover {
-    background: #ff4d4d !important;
-    color: white !important;
-    opacity: 1;
-}
-
-/* =================================================================
-   ✨ NEW UI: Glassmorphism & Clean Layout
-   ================================================================= */
-
-/* 1. กรอบกระจกใสๆ รองหลังเนื้อหา */
-.glass-panel {
-    background: rgba(255, 255, 255, 0.03); /* สีขาวจางมากๆ */
-    backdrop-filter: blur(12px);           /* เบลอฉากหลัง */
-    -webkit-backdrop-filter: blur(12px);   /* สำหรับ Safari */
-    border: 1px solid rgba(255, 255, 255, 0.1); /* ขอบบางๆ */
-    border-radius: 24px;
-    padding: 40px 20px;
-    margin-bottom: 30px; /* เว้นระยะห่างจากปุ่ม Admin ด้านล่าง */
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
-    
-    /* จัดกึ่งกลาง */
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 20px;
-}
-
-/* 2. พื้นที่ปุ่ม START (ทำให้ปุ่มดูมีพื้นที่หายใจ) */
-.action-area {
-    margin-top: 15px;
-    width: 100%;
-    display: flex;
-    justify-content: center;
-}
-
-/* 3. แถบควบคุม Admin (ย้ายไปไว้ล่างสุด + ทำให้เล็กลง) */
-.admin-controls {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 15px;      /* ระยะห่างระหว่างปุ่ม Admin */
-    opacity: 0.6;   /* จางลงหน่อย เพื่อไม่ให้แย่งสายตา */
-    transition: opacity 0.3s ease;
-}
-
-.admin-controls:hover {
-    opacity: 1; /* เมาส์ชี้แล้วค่อยชัด */
-}
-
-/* 4. สไตล์ปุ่ม Admin แบบใหม่ (ปุ่มผี/Ghost Button) */
-.btn-admin {
-    background: transparent;
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    color: #aaa;
-    font-family: 'Kanit', sans-serif;
-    font-size: 12px;
-    padding: 8px 16px;
-    border-radius: 50px;
-    cursor: pointer;
-    transition: all 0.2s;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-}
-
-.btn-admin:hover {
-    background: rgba(255, 255, 255, 0.1);
-    color: #fff;
-    border-color: #fff;
-    transform: translateY(-2px);
-}
-
-/* ปุ่ม Reset สีแดงเฉพาะตัว */
-.btn-admin.btn-danger:hover {
-    border-color: #ff4d4d;
-    color: #ff4d4d;
-    background: rgba(255, 77, 77, 0.1);
-    box-shadow: 0 0 15px rgba(255, 77, 77, 0.2);
-}
-
-/* ปรับระยะห่างชื่อรางวัลให้สมดุล */
-.banner-display h1 {
-    margin-bottom: 10px !important;
-}
-
-.btn-next {
-    background: linear-gradient(90deg, #1e3c72 0%, #2a5298 100%);
-    border: 1px solid #4a90e2;
-    color: #fff;
-    padding: 10px 30px; /* ปรับขนาดให้พอดีกับแถบล่าง */
-    border-radius: 50px;
-    font-size: 16px;
-    font-weight: bold;
-    cursor: pointer;
-    box-shadow: 0 0 15px rgba(74, 144, 226, 0.4);
-    margin-left: 15px; /* เว้นระยะจากปุ่มย้อนกลับ */
-}
-
-.btn-next:hover {
-    transform: scale(1.05);
-    box-shadow: 0 0 25px rgba(74, 144, 226, 0.8);
-}
-
-/* =========================================
-   🚀 LOADING & STANDBY SCREENS
-   ========================================= */
-
-/* --- 1. Global Loader (หน้าโหลดตอนเข้าเว็บ) --- */
 .loading-overlay {
-    position: fixed;
-    top: 0; left: 0; width: 100%; height: 100%;
-    background: #050508; /* สีพื้นดำเข้ม */
-    z-index: 9999;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: #050508; z-index: var(--z-loader);
+    display: flex; justify-content: center; align-items: center;
     transition: opacity 0.5s ease;
 }
-
-.loader-content {
-    text-align: center;
-    color: #4a90e2;
-}
-
-/* ดาวเคราะห์หมุน */
-.planet-spinner {
-    position: relative;
-    width: 80px; height: 80px;
-    margin: 0 auto 20px;
-}
+.planet-spinner { position: relative; width: 80px; height: 80px; margin: 0 auto 20px; }
 .planet {
-    width: 40px; height: 40px;
-    background: linear-gradient(135deg, #4a90e2, #8e44ad);
-    border-radius: 50%;
-    position: absolute;
-    top: 20px; left: 20px;
+    width: 40px; height: 40px; background: linear-gradient(135deg, #4a90e2, #8e44ad);
+    border-radius: 50%; position: absolute; top: 20px; left: 20px;
     box-shadow: 0 0 20px rgba(74, 144, 226, 0.6);
 }
 .ring {
-    position: absolute;
-    top: 0; left: 0; width: 100%; height: 100%;
-    border: 4px solid transparent;
-    border-top-color: #fff;
-    border-bottom-color: #fff;
-    border-radius: 50%;
-    animation: spin 1.5s linear infinite;
-    opacity: 0.5;
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    border: 4px solid transparent; border-top-color: #fff; border-bottom-color: #fff;
+    border-radius: 50%; animation: spin 1.5s linear infinite; opacity: 0.5;
 }
-
 .loading-text {
-    font-family: 'Courier New', monospace;
-    letter-spacing: 3px;
-    font-size: 14px;
-    animation: pulse 1s infinite alternate;
+    font-family: 'Courier New', monospace; letter-spacing: 3px; font-size: 14px;
+    animation: pulse 1s infinite alternate; color: var(--neon-blue);
 }
 
-/* --- 2. Audience Standby (หน้าคนดูรอ Admin) --- */
+/* Standby Radar */
 .standby-screen {
-    position: fixed;
-    top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0,0,0,0.8);
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    z-index: 100;
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.8); z-index: var(--z-content);
+    display: flex; flex-direction: column; justify-content: center; align-items: center;
 }
-
-/* เรดาร์สแกน */
 .radar-container {
-    width: 120px; height: 120px;
-    border: 2px solid #333;
-    border-radius: 50%;
-    position: relative;
-    margin-bottom: 20px;
-    background: rgba(0, 255, 0, 0.05);
+    width: 120px; height: 120px; border: 2px solid #333; border-radius: 50%;
+    position: relative; margin-bottom: 20px; background: rgba(0, 255, 0, 0.05);
     box-shadow: 0 0 15px rgba(0, 255, 0, 0.2);
-}
-.radar-grid {
-    position: absolute;
-    top: 50%; left: 0; width: 100%; height: 1px; background: #333;
-}
-.radar-grid::after {
-    content:''; position: absolute; top: -60px; left: 50%;
-    width: 1px; height: 120px; background: #333;
 }
 .radar-sweep {
     position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-    border-radius: 50%;
-    background: conic-gradient(from 0deg, transparent 270deg, rgba(0, 255, 0, 0.4) 360deg);
+    border-radius: 50%; background: conic-gradient(from 0deg, transparent 270deg, rgba(0, 255, 0, 0.4) 360deg);
     animation: spin 2s linear infinite;
 }
+.standby-screen h2 { color: var(--neon-blue); font-size: 24px; text-shadow: 0 0 10px var(--neon-blue); }
 
-.standby-screen h2 {
-    color: #4a90e2;
-    margin: 0;
-    font-size: 24px;
-    text-shadow: 0 0 10px #4a90e2;
-}
-.standby-screen p {
-    color: #777;
-    margin-top: 5px;
+/* Message Waiting (Text Flicker) */
+#msgWaiting {
+    display: none; justify-content: center; align-items: center; position: relative;
+    padding: 20px 40px; margin-top: 30px;
+    font-family: 'Courier New', monospace; color: #00f2ff;
+    border: 1px solid #00f2ff; border-radius: 4px; background: rgba(0, 20, 40, 0.6);
+    box-shadow: inset 0 0 15px rgba(0, 242, 255, 0.2);
+    animation: textFlicker 2s infinite;
 }
 
-/* Animations */
+/* =================================================================
+   8. ANIMATION KEYFRAMES
+   ================================================================= */
+@keyframes meteorFall {
+    0% { transform: translate(-50%, -50%) scale(0); opacity: 0; color: #fff; }
+    20% { opacity: 1; }
+    70% { transform: translate(-50%, -50%) scale(2); color: currentColor; }
+    100% { transform: translate(-50%, -50%) scale(50); opacity: 0; color: currentColor; }
+}
+@keyframes popIn { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+@keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 @keyframes pulse { from { opacity: 0.5; } to { opacity: 1; } }
-.blink-text { animation: pulse 0.8s infinite alternate; }
+@keyframes textFlicker {
+    0%, 100% { opacity: 1; } 92% { opacity: 1; } 93% { opacity: 0.5; }
+    94% { opacity: 1; } 96% { opacity: 0.3; } 97% { opacity: 1; }
+}
+@keyframes blackHoleSuck {
+    0% { transform: scale(1) rotate(0deg); filter: blur(0px); opacity: 1; }
+    50% { transform: scale(0.5) rotate(180deg); filter: blur(4px); opacity: 0.5; }
+    100% { transform: scale(0) rotate(720deg); filter: blur(20px); opacity: 0; }
+}
+.suck-in-animation { pointer-events: none; animation: blackHoleSuck 0.8s ease-in forwards; }
