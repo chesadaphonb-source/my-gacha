@@ -6,14 +6,14 @@ import { getDatabase, ref, set, onValue, update } from "https://www.gstatic.com/
 
 // ⚠️ Config Firebase ของคุณ
 const firebaseConfig = {
-  apiKey: "AIzaSyAKE2HbyCt-CTjpasigrkaOlGGSwH5DlBM",
-  authDomain: "server-random.firebaseapp.com",
-  databaseURL: "https://server-random-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "server-random",
-  storageBucket: "server-random.firebasestorage.app",
-  messagingSenderId: "692801108531",
-  appId: "1:692801108531:web:89d571d87f5d74df9c0146",
-  measurementId: "G-EME97K8JDN"
+  apiKey: "AIzaSyDGR3oHvEq9tDQu6hailtyO0Hj1tuMq89I",
+  authDomain: "gacha-gg.firebaseapp.com",
+  databaseURL: "https://gacha-gg-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "gacha-gg",
+  storageBucket: "gacha-gg.firebasestorage.app",
+  messagingSenderId: "873455879396",
+  appId: "1:873455879396:web:ed5893a7f10356fe8198f1",
+  measurementId: "G-21XKJM292C"
 };
 
 // เริ่มต้นระบบ
@@ -647,6 +647,20 @@ document.addEventListener('DOMContentLoaded', () => {
         animate();
     }
 });
+
+window.killConn = function() {
+    if (typeof db !== 'undefined') {
+        const { goOffline } = firebaseDatabase; // ดึงมาจาก Module ที่เรา import ไว้ต้นไฟล์
+        // หรือถ้าใช้แบบเรียบง่ายที่สุดสำหรับ Firebase v9/v10
+        import("https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js").then((mod) => {
+            mod.goOffline(db);
+            console.log("🔌 ตัดการเชื่อมต่อแล้ว! (Connection ว่างขึ้น 1 ช่อง)");
+        });
+    } else {
+        console.error("หาตัวแปร db ไม่เจอครับ!");
+    }
+};
+
 
 
 
