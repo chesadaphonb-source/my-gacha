@@ -61,36 +61,47 @@ let winnersHistory = {};
    ส่วนที่ 2: Listener (ตัวรับคำสั่งจาก Cloud เพื่อเปลี่ยนหน้าจอ)
    ========================================================================== */
 onValue(gameRef, (snapshot) => {
-    const state = snapshot.val();
+    // 1. ปิดหน้า Loading Overlay ทันทีที่เชื่อมต่อ Firebase สำเร็จ
+    const loader = document.getElementById('globalLoader');
+    if (loader) loader.style.display = 'none';
 
-    // 1. ถ้าไม่มีข้อมูล (เช่น โดน Reset) -> กลับหน้า Setup
-    if (!state) {
-        document.getElementById('setupContainer').style.display = 'block';
-        document.getElementById('mainScreen').style.display = 'none';
+    const state = snapshot.val();
+    const setupContainer = document.getElementById('setupContainer');
+    const mainScreen = document.getElementById('mainScreen');
+    const audienceStandby = document.getElementById('audienceStandby');
+
+    // 2. ถ้าไม่มีข้อมูล หรือ Admin ยัง Setup ไม่เสร็จ
+    if (!state || !state.isSetupDone) {
+        if (isAdmin) {
+            // Admin: ให้เห็นหน้า Setup ตามปกติ
+            if(setupContainer) setupContainer.style.display = 'block';
+            if(mainScreen) mainScreen.style.display = 'none';
+            if(audienceStandby) audienceStandby.style.display = 'none';
+        } else {
+            // Audience: ให้เห็นหน้าเรดาร์ (Standby) แทนที่จะเห็นกล่อง URL
+            if(setupContainer) setupContainer.style.display = 'none'; // ซ่อน Setup
+            if(mainScreen) mainScreen.style.display = 'none';
+            if(audienceStandby) audienceStandby.style.display = 'flex'; // โชว์เรดาร์
+        }
         return;
     }
 
-    // 2. อัปเดตข้อมูลในเครื่อง
+    // 3. ถ้า Setup เสร็จแล้ว -> เข้าสู่หน้าเกม
+    if(setupContainer) setupContainer.style.display = 'none';
+    if(audienceStandby) audienceStandby.style.display = 'none'; // ซ่อนเรดาร์
+    if(mainScreen) mainScreen.style.display = 'block';
+
+    // ... (โค้ดอัปเดตตัวแปร participants, headers ฯลฯ ของเดิมต่อจากตรงนี้) ...
     participants = state.participants || [];
     headers = state.headers || [];
     winnersHistory = state.history || {};
     currentTier = state.currentTier || 0;
-
-    // 3. เช็คสถานะ Setup
-    if (state.isSetupDone) {
-        document.getElementById('setupContainer').style.display = 'none';
-        document.getElementById('mainScreen').style.display = 'block';
-        updateUI(); 
-    } else {
-        document.getElementById('setupContainer').style.display = 'block';
-        document.getElementById('mainScreen').style.display = 'none';
-        return;
-    }
-
-    // 4. จัดการปุ่ม Admin/User
+    
+    // ... (ส่วนที่เหลือของฟังก์ชัน onValue เหมือนเดิม) ...
+    updateUI();
     refreshAdminUI();
 
-    // 5. ควบคุม Animation ตามสถานะ (Status)
+    // Logic Animation (เหมือนเดิม)
     if (state.status === 'WARPING') {
          if (!isWarping) { 
              starColor = state.activeColor || '#fff';
@@ -102,7 +113,6 @@ onValue(gameRef, (snapshot) => {
             showResults(state.lastRoundWinners, prizes[currentTier]);
         }
     } else if (state.status === 'IDLE') {
-         // สถานะรอ: ปิดหน้าผลรางวัล กลับมาหน้าหลัก
          if(document.getElementById('resultScreen').style.display === 'flex') {
              closeResult();
          }
@@ -550,4 +560,5 @@ if (canvas) {
     }
     animate();
 }
+
 
