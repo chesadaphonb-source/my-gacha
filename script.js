@@ -1,10 +1,10 @@
 /* ==========================================================================
-   ส่วนที่ 1: เชื่อมต่อ server และตั้งค่าตัวแปร (Global)
+   ส่วนที่ 1: เชื่อมต่อ Server & ตั้งค่าพื้นฐาน (ห้ามลบ)
    ========================================================================== */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getDatabase, ref, set, onValue, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
-// ⚠️ Config Firebase ของคุณ
+// ⚠️ Config Firebase ของคุณ (ตามที่ส่งมา)
 const firebaseConfig = {
   apiKey: "AIzaSyDGR3oHvEq9tDQu6hailtyO0Hj1tuMq89I",
   authDomain: "gacha-gg.firebaseapp.com",
@@ -19,9 +19,16 @@ const firebaseConfig = {
 // เริ่มต้นระบบ
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
-const gameRef = ref(db, 'gacha_room_v1');
+const gameRef = ref(db, 'systemState'); // ใช้ Node 'systemState' เพื่อเก็บสถานะเกม
 
-// --- 6. Expose Functions to Window (สำคัญมาก! เพื่อให้ปุ่ม HTML กดติด) ---
+// --- ตรวจสอบสิทธิ์ Admin (จาก URL ?admin=true) ---
+const urlParams = new URLSearchParams(window.location.search);
+if (urlParams.get('admin') === 'true') {
+    localStorage.setItem('wish_admin', 'true');
+}
+const isAdmin = localStorage.getItem('wish_admin') === 'true';
+
+// --- ⚠️ สำคัญมาก: เปิดฟังก์ชันให้ HTML เรียกใช้ได้ (Expose to Window) ---
 window.loadData = loadData;
 window.startWish = startWish;
 window.nextRound = nextRound;
@@ -30,9 +37,11 @@ window.toggleHistory = toggleHistory;
 window.copyToClipboard = copyToClipboard;
 window.filterHistory = filterHistory;
 window.closeResult = closeResult;
-window.forceClearCache = forceClearCache; // เพิ่มตัวนี้ให้ด้วยครับ
+window.forceClearCache = forceClearCache;
+window.goToLatestSession = goToLatestSession;
 
-// --- Configuration & Global Variables ---
+// --- ตัวแปร Global ---
+// ปรับแก้ชื่อรางวัลและจำนวนตามต้องการได้ที่นี่
 const prizes = [
     { name: "รางวัลที่ 5 (20 บาท)", count: 50, color: "#33CC00" },
     { name: "รางวัลที่ 4 (50 บาท)", count: 30, color: "#99CCFF" },
@@ -48,62 +57,78 @@ let isWarping = false;
 let starColor = "#fff";
 let winnersHistory = {};
 
-// เช็ค Admin
-const urlParams = new URLSearchParams(window.location.search);
-const isAdmin = urlParams.get('admin') === 'true';
-
 /* ==========================================================================
-   ส่วนที่ 2: Listener (ตัวรับคำสั่งจาก Cloud)
+   ส่วนที่ 2: Listener (ตัวรับคำสั่งจาก Cloud เพื่อเปลี่ยนหน้าจอ)
    ========================================================================== */
-onValue(ref(db, 'systemState'), (snapshot) => {
+onValue(gameRef, (snapshot) => {
     const state = snapshot.val();
-    if (!state) return;
 
-    // ✅ ส่วนสำคัญ: ถ้าโหลดข้อมูลเสร็จแล้ว (isSetupDone เป็น true)
-    if (state.isSetupDone) {
-        document.getElementById('setupContainer').style.display = 'none'; // ซ่อนกล่องดำ
-        document.getElementById('mainScreen').style.display = 'block';    // โชว์หน้าสุ่ม
-    } else {
-        document.getElementById('setupContainer').style.display = 'block'; // โชว์กล่องดำ
-        document.getElementById('mainScreen').style.display = 'none';     // ซ่อนหน้าสุ่ม
+    // 1. ถ้าไม่มีข้อมูล (เช่น โดน Reset) -> กลับหน้า Setup
+    if (!state) {
+        document.getElementById('setupContainer').style.display = 'block';
+        document.getElementById('mainScreen').style.display = 'none';
+        return;
     }
 
-    // ส่วนควบคุมปุ่ม Admin (โชว์เฉพาะเมื่อ setup เสร็จแล้ว)
-    const isAdmin = localStorage.getItem('wish_admin') === 'true';
-    if (isAdmin && state.isSetupDone) {
-        document.getElementById('btnGoToCurrent').style.display = 'inline-block';
-        document.getElementById('btnResetSystem').style.display = 'block';
-        document.getElementById('btnStart').style.display = 'inline-block';
-        document.getElementById('msgWaiting').style.display = 'none';
-    } else if (state.isSetupDone) {
-        // สำหรับ User ทั่วไป ซ่อนปุ่มกด
-        document.getElementById('btnGoToCurrent').style.display = 'none';
-        document.getElementById('btnResetSystem').style.display = 'none';
-        document.getElementById('btnStart').style.display = 'none';
-        document.getElementById('msgWaiting').style.display = 'flex';
+    // 2. อัปเดตข้อมูลในเครื่อง
+    participants = state.participants || [];
+    headers = state.headers || [];
+    winnersHistory = state.history || {};
+    currentTier = state.currentTier || 0;
+
+    // 3. เช็คสถานะ Setup
+    if (state.isSetupDone) {
+        document.getElementById('setupContainer').style.display = 'none';
+        document.getElementById('mainScreen').style.display = 'block';
+        updateUI(); 
+    } else {
+        document.getElementById('setupContainer').style.display = 'block';
+        document.getElementById('mainScreen').style.display = 'none';
+        return;
+    }
+
+    // 4. จัดการปุ่ม Admin/User
+    refreshAdminUI();
+
+    // 5. ควบคุม Animation ตามสถานะ (Status)
+    if (state.status === 'WARPING') {
+         if (!isWarping) { 
+             starColor = state.activeColor || '#fff';
+             runWarpEffect(); 
+         }
+    } else if (state.status === 'SHOW_RESULT') {
+        stopWarpEffect();
+        if(state.lastRoundWinners) {
+            showResults(state.lastRoundWinners, prizes[currentTier]);
+        }
+    } else if (state.status === 'IDLE') {
+         // สถานะรอ: ปิดหน้าผลรางวัล กลับมาหน้าหลัก
+         if(document.getElementById('resultScreen').style.display === 'flex') {
+             closeResult();
+         }
+         stopWarpEffect();
     }
 });
+
 /* ==========================================================================
-   ส่วนที่ 3: Logic การทำงาน (Admin สั่งงาน)
+   ส่วนที่ 3: Logic การทำงาน (Admin Actions)
    ========================================================================== */
 
-// 1. Load Data
 function loadData() {
-    if (!isAdmin) return; 
+    if (!isAdmin) return alert("Access Denied: Admin only"); 
 
     const urlInput = document.getElementById('sheetUrl');
-    if(!urlInput) return;
     const url = urlInput.value.trim();
     if(!url) return alert("กรุณาใส่ลิงก์ CSV");
 
-    const btn = document.querySelector('#setupContainer button');
+    const btn = document.querySelector('#setupContainer button'); 
     if(btn) { btn.innerText = "กำลังส่งข้อมูล..."; btn.disabled = true; }
 
     fetch(url)
         .then(response => response.text())
         .then(csv => {
             const lines = csv.split(/\r?\n/).filter(line => line.trim() !== "");
-            if (lines.length < 2) { alert("Data Error"); if(btn) btn.disabled=false; return; }
+            if (lines.length < 2) { throw new Error("No data found"); }
             
             const newHeaders = lines[0].split(',').map(h => h.trim());
             const newParticipants = lines.slice(1).map(line => {
@@ -117,6 +142,7 @@ function loadData() {
             const initialHistory = {};
             prizes.forEach(p => initialHistory[p.name] = []);
 
+            // ส่งขึ้น Firebase
             set(gameRef, {
                 isSetupDone: true,
                 status: 'IDLE',
@@ -125,71 +151,74 @@ function loadData() {
                 history: initialHistory,
                 currentTier: 0,
                 activeColor: '#fff',
-                lastRoundWinners: []
+                timestamp: Date.now()
             });
+            
+            // ไม่ต้องทำอะไรต่อ onValue จะทำงานเอง
         })
-        .catch(err => { console.error(err); alert("Link Error"); if(btn) btn.disabled=false; });
+        .catch(err => { 
+            console.error(err); 
+            alert("Error Loading CSV: " + err.message); 
+            if(btn) { btn.innerText = "Load Data"; btn.disabled = false; }
+        });
 }
 
-// 2. กดปุ่มสุ่ม
 function startWish() {
     if(!isAdmin) return; 
-   
+    
+    if (currentTier >= prizes.length) return alert("แจกครบทุกรางวัลแล้ว!");
     const currentPrizeName = prizes[currentTier].name;
+    
+    // เช็คว่าเคยแจกไปหรือยัง
     if (winnersHistory[currentPrizeName] && winnersHistory[currentPrizeName].length > 0) {
-        alert("⛔ รางวัลรอบนี้สุ่มไปแล้วครับ!");
-        return;
+        if(!confirm(`รางวัล "${currentPrizeName}" มีการแจกไปแล้ว ต้องการแจกซ้ำหรือไม่?`)) return;
     }
+    
     if(participants.length === 0) return alert("รายชื่อหมดแล้ว!");
     
     const tier = prizes[currentTier];
 
+    // 1. สั่ง Warping
     update(gameRef, {
         status: 'WARPING',
         activeColor: tier.color
     });
 
+    // 2. รอ Animation 2.5 วินาที แล้วค่อยสุ่ม
     setTimeout(() => {
         performRaffle();
-    }, 2000);
+    }, 2500);
 }
 
-// 3. คำนวณผู้ชนะ
 function performRaffle() {
-    if(!isAdmin) return;
-
     const tier = prizes[currentTier];
-    if (!tier) return alert("ไม่พบข้อมูลรางวัล");
-
     const drawCount = Math.min(tier.count, participants.length);
     
-    // Fisher-Yates Shuffle
+    // Fisher-Yates Shuffle (สุ่ม)
     for (let i = participants.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [participants[i], participants[j]] = [participants[j], participants[i]];
     }
     
     const winners = participants.slice(0, drawCount);
-    const remainingParticipants = participants.slice(drawCount);
+    const remaining = participants.slice(drawCount);
     
     let newHistory = { ...winnersHistory };
-    
-    if (!newHistory[tier.name]) {
-        newHistory[tier.name] = [];
-    }
+    if (!newHistory[tier.name]) newHistory[tier.name] = [];
     newHistory[tier.name].push(...winners);
 
+    // อัปเดตผลผู้ชนะและส่งขึ้น Cloud
     update(gameRef, {
         status: 'SHOW_RESULT',
         lastRoundWinners: winners,
-        participants: remainingParticipants,
+        participants: remaining,
         history: newHistory
     });
 
+    // บันทึกลง Sheet (ถ้ามี Script)
     saveToSheet(winners, tier.name);
 }
 
-// 4. ไปรอบถัดไป
 function nextRound() { 
     if(!isAdmin) return;
     update(gameRef, {
@@ -198,11 +227,10 @@ function nextRound() {
     });
 }
 
-// 5. Reset Game (แก้ไข: ให้มีการแจ้งเตือนชัดเจน)
 function resetGame() {
     if(!isAdmin) return;
     
-    if(confirm("⚠️ คำเตือนสำคัญ!\n\nนี่คือการล้างข้อมูล 'ทั้งหมด' ในระบบ\n- รายชื่อผู้โชคดีจะหายไป\n- ประวัติการจับรางวัลจะหายไป\n\nยืนยันที่จะล้างค่าหรือไม่?")) {
+    if(confirm("⚠️ ยืนยันการล้างระบบ?\n- ข้อมูลรายชื่อจะหายไป\n- ประวัติผู้ชนะจะหายไป")) {
         set(gameRef, null).then(() => {
             alert("✅ ล้างระบบเรียบร้อย!");
             location.reload();
@@ -210,58 +238,70 @@ function resetGame() {
     }
 }
 
-/* --- UI Helper Functions --- */
+/* ==========================================================================
+   ส่วนที่ 4: UI & Animation Helpers
+   ========================================================================== */
+
 function updateUI() {
-    const mainScreen = document.getElementById('mainScreen');
+    const banner = document.getElementById('bannerDisplay');
+    const poolCount = document.getElementById('poolCount');
+    
+    if(!banner || !poolCount) return;
+
     if (currentTier >= prizes.length) {
-        mainScreen.innerHTML = `
-            <h1 class="gold-text" style="font-size:40px;">🎉 จบกิจกรรม! 🎉</h1>
-            <p>ขอบคุณผู้ร่วมสนุกทุกท่าน</p>
-            <button class="btn-wish" onclick="toggleHistory()">📜 ดูสรุปรายชื่อ</button>
-            ${isAdmin ? '<br><br><button class="btn-wish" onclick="resetGame()">↺ เริ่มใหม่ (Reset)</button>' : ''}
-        `;
+        banner.innerHTML = `<h1 class="gold-text" style="font-size:40px;">🎉 จบกิจกรรม! 🎉</h1>`;
+        poolCount.innerText = "ขอบคุณผู้ร่วมสนุกทุกท่าน";
         return;
     }
+    
     const tier = prizes[currentTier];
-    document.getElementById('bannerDisplay').innerHTML = `
+    banner.innerHTML = `
         <h1 style="color:${tier.color}; font-size: clamp(30px, 6vw, 60px); margin:0; text-shadow: 0 0 20px currentColor;">${tier.name}</h1>
-        <p style="font-size: 20px; color:#ddd;">จำนวนรางวัล: ${tier.count}</p>
+        <p style="font-size: 20px; color:#ddd;">แจกรางวัลละ: ${tier.count} ท่าน</p>
     `;
-    document.getElementById('poolCount').innerText = `คงเหลือผู้ลุ้นรางวัล: ${participants.length} คน`;
-    starColor = tier.color;
+    poolCount.innerText = `คงเหลือผู้ลุ้นรางวัล: ${participants.length} คน`;
+}
+
+function refreshAdminUI() {
+    const btnStart = document.getElementById('btnStart');
+    const msgWaiting = document.getElementById('msgWaiting');
+    const btnReset = document.getElementById('btnResetSystem');
+    const btnGoToCurrent = document.getElementById('btnGoToCurrent');
+    const btnHistory = document.querySelector('.btn-history-toggle');
+
+    if (isAdmin) {
+        if(btnStart) btnStart.style.display = 'inline-block';
+        if(msgWaiting) msgWaiting.style.display = 'none';
+        if(btnReset) btnReset.style.display = 'block';
+        if(btnGoToCurrent) btnGoToCurrent.style.display = 'inline-block';
+        if(btnHistory) btnHistory.style.display = 'block';
+    } else {
+        if(btnStart) btnStart.style.display = 'none';
+        if(msgWaiting) msgWaiting.style.display = 'flex';
+        if(btnReset) btnReset.style.display = 'none';
+        if(btnGoToCurrent) btnGoToCurrent.style.display = 'none';
+    }
 }
 
 function runWarpEffect() {
+    isWarping = true;
     const meteor = document.getElementById('meteor');
     const flash = document.getElementById('flashOverlay');
     const container = document.querySelector('.container');
-    const btnHistory = document.querySelector('.btn-history-toggle');
-    const btnReset = document.getElementById('btnResetSystem');
-    const btnUpdate = document.getElementById('btnUpdate');
+    const controls = document.querySelectorAll('.btn-wish, .btn-history-toggle, .btn-reset-system');
 
-    isWarping = true;
-
-    // 🌪️ 1. ใส่เอฟเฟกต์ "โดนดูด" ให้กับทุกส่วนของ UI
     if(container) container.classList.add('suck-in-animation');
-    if(btnHistory) btnHistory.classList.add('suck-in-animation');
-    if(btnReset) btnReset.classList.add('suck-in-animation');
-    if(btnUpdate) btnUpdate.classList.add('suck-in-animation');
+    controls.forEach(el => el.classList.add('suck-in-animation'));
 
-    // ⏳ 2. รอให้โดนดูดจนหายไป (0.8s) แล้วค่อยสั่งซ่อนจริงๆ เพื่อความชัวร์
     setTimeout(() => {
         if(container) container.style.opacity = 0;
-        if(btnHistory) btnHistory.style.display = 'none';
-        if(btnReset) btnReset.style.display = 'none';
-        if(btnUpdate) btnUpdate.style.display = 'none';
-    }, 800);
+        controls.forEach(el => el.style.display = 'none');
+    }, 700);
 
-    // ☄️ 3. เริ่มลูกไฟพุ่ง (Meteor) - ให้เริ่มหลังจากโดนดูดไปสักพัก
     if(meteor) { 
         meteor.style.color = starColor; 
         meteor.classList.add('meteor-falling'); 
     }
-
-    // ⚪ 4. แฟลชขาวตอนระเบิด
     if(flash) { 
         flash.style.background = starColor; 
         setTimeout(() => { flash.style.opacity = 1; }, 1500); 
@@ -273,7 +313,7 @@ function stopWarpEffect() {
     const meteor = document.getElementById('meteor');
     const flash = document.getElementById('flashOverlay');
     if(meteor) meteor.classList.remove('meteor-falling');
-    if(flash) { flash.style.opacity = 0; flash.style.background = "white"; }
+    if(flash) { flash.style.opacity = 0; }
 }
 
 function showResults(winners, tier) {
@@ -282,46 +322,41 @@ function showResults(winners, tier) {
 
     title.innerText = tier.name;
     title.style.color = tier.color;
-    title.style.textAlign = 'left'; 
-    title.style.width = '100%';
-    title.style.paddingLeft = '10px'; 
     
     grid.innerHTML = "";
-
     winners.forEach((winner, index) => {
         const card = document.createElement('div');
         card.className = 'card';
         card.style.borderColor = tier.color;
-        card.style.animationDelay = `${index * 0.05}s`;
-        card.style.overflow = "hidden";
+        card.style.animationDelay = `${index * 0.1}s`;
 
         const headerDiv = document.createElement('div');
         headerDiv.className = 'card-header';
         headerDiv.style.background = tier.color;
-        headerDiv.textContent = winner[headers[0]];
+        headerDiv.textContent = winner[headers[0]] || "ID"; // ใช้คอลัมน์แรกเป็นหัว
         card.appendChild(headerDiv);
 
         const bodyDiv = document.createElement('div');
         bodyDiv.className = 'card-body';
         
-            const mainInfo = document.createElement('div');
-            mainInfo.className = 'info-main';
-            mainInfo.style.color = tier.color;
-            mainInfo.textContent = winner[headers[1]] || "";
-            bodyDiv.appendChild(mainInfo);
+        const mainInfo = document.createElement('div');
+        mainInfo.className = 'info-main';
+        mainInfo.style.color = tier.color;
+        mainInfo.textContent = winner[headers[1]] || ""; // ใช้คอลัมน์สองเป็นชื่อหลัก
+        bodyDiv.appendChild(mainInfo);
 
-            for(let k=2; k < headers.length; k++) {
-                const val = winner[headers[k]];
-                if(val && val !== "-") {
-                    const subInfo = document.createElement('div');
-                    subInfo.className = 'info-sub';
-                    subInfo.textContent = `${headers[k]}: ${val}`;
-                    bodyDiv.appendChild(subInfo);
-                }
+        // แสดงข้อมูลที่เหลือ
+        for(let k=2; k < headers.length; k++) {
+            const val = winner[headers[k]];
+            if(val && val !== "-") {
+                const subInfo = document.createElement('div');
+                subInfo.className = 'info-sub';
+                subInfo.textContent = `${headers[k]}: ${val}`;
+                bodyDiv.appendChild(subInfo);
             }
-
+        }
         card.appendChild(bodyDiv);
-        grid.appendChild(card);   
+        grid.appendChild(card);    
     });
 
     document.getElementById('resultScreen').style.display = 'flex';
@@ -329,11 +364,31 @@ function showResults(winners, tier) {
 
 function closeResult() {
     document.getElementById('resultScreen').style.display = 'none';
-   
-    resetUIForNextWish();
+    goToLatestSession(); 
 }
 
-/* --- History & Copy System --- */
+function goToLatestSession() {
+    // ล้าง Animation กลับสู่สภาพปกติ
+    const suckedElements = document.querySelectorAll('.suck-in-animation');
+    suckedElements.forEach(el => {
+        el.classList.remove('suck-in-animation');
+        el.style.opacity = 1;
+        el.style.transform = '';
+        el.style.filter = '';
+    });
+
+    document.getElementById('resultScreen').style.display = 'none';
+    const container = document.getElementById('mainScreen');
+    if(container) {
+        container.style.display = 'block';
+        container.style.opacity = 1;
+    }
+    refreshAdminUI();
+}
+
+/* ==========================================================================
+   ส่วนที่ 5: History & Background
+   ========================================================================== */
 function toggleHistory() {
     const modal = document.getElementById('historyModal');
     const list = document.getElementById('historyList');
@@ -341,6 +396,7 @@ function toggleHistory() {
     if (modal.style.display === 'flex') {
         modal.style.display = 'none';
     } else {
+        // สร้าง Tab History
         const activePrizes = prizes.filter(p => winnersHistory[p.name] && winnersHistory[p.name].length > 0);
         if (activePrizes.length === 0) {
             list.innerHTML = `<p style="text-align:center; color:#888; margin-top:50px;">ยังไม่มีการจับรางวัล</p>`;
@@ -354,69 +410,50 @@ function toggleHistory() {
                 tabsHtml += `<button class="tab-btn ${isActive}" onclick="switchTab(event, 'tab-${index}')">${prize.name} <span>(${winners.length})</span></button>`;
                 contentHtml += `
                     <div id="tab-${index}" class="tab-content ${isActive}">
-                        <div style="text-align:right; margin-bottom:10px;">
-                            <button onclick="copyToClipboard('${prize.name}')" style="background:#4a90e2; color:white; border:none; padding:8px 15px; border-radius:5px; cursor:pointer; font-size:14px; font-weight:bold;">📋 ก๊อปปี้รายชื่อ ${prize.name}</button>
+                        <div style="text-align:right; margin-bottom:10px; padding:0 20px;">
+                            <button onclick="copyToClipboard('${prize.name}')" style="background:#4a90e2; color:white; border:none; padding:5px 15px; border-radius:5px; cursor:pointer;">📋 Copy รายชื่อ</button>
                         </div>
                 `;
                 winners.forEach(w => {
                     const name = w[headers[1]] || "ไม่ระบุชื่อ";
-                    const dept = w[headers[2]] || "-"; 
-                    contentHtml += `<div class="history-item searchable-item">${name} <span>${dept}</span></div>`;
+                    const info = w[headers[2]] || "-"; 
+                    contentHtml += `<div class="history-item searchable-item">${name} <span>${info}</span></div>`;
                 });
                 contentHtml += `</div>`;
             });
-
             tabsHtml += `</div>`;
             contentHtml += `</div>`;
+            
+            // Search Box
             const searchHtml = `
                 <div style="padding: 10px 20px; text-align: center;">
                     <input type="text" id="historySearchInput" onkeyup="filterHistory()" placeholder="🔍 พิมพ์ชื่อเพื่อค้นหา..." 
-                    style="width: 100%; max-width: 400px; padding: 10px; border-radius: 20px; border: 1px solid #555; background: #222; color: #fff; text-align: center; outline: none;">
+                    style="width: 100%; max-width: 400px; padding: 10px; border-radius: 20px; border: 1px solid #555; background: #222; color: #fff; text-align: center;">
                 </div>
             `;
             list.innerHTML = tabsHtml + searchHtml + contentHtml;
-            initDragScroll();
         }
         modal.style.display = 'flex';
     }
 }
 
-function initDragScroll() {
-    const slider = document.getElementById('tabsContainer');
-    if(!slider) return;
-    let isDown = false; let startX; let scrollLeft;
-    slider.addEventListener('mousedown', (e) => { isDown = true; startX = e.pageX - slider.offsetLeft; scrollLeft = slider.scrollLeft; });
-    slider.addEventListener('mouseleave', () => { isDown = false; });
-    slider.addEventListener('mouseup', () => { isDown = false; });
-    slider.addEventListener('mousemove', (e) => { if (!isDown) return; e.preventDefault(); const x = e.pageX - slider.offsetLeft; const walk = (x - startX) * 2; slider.scrollLeft = scrollLeft - walk; });
-}
-
+// ฟังก์ชันสลับ Tab (ต้อง attach window)
 window.switchTab = function(event, tabId) {                                             
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     event.currentTarget.classList.add('active');
     document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
     const target = document.getElementById(tabId);
     if(target) target.classList.add('active');
-    const searchInput = document.getElementById('historySearchInput');
-    if (searchInput) {
-        searchInput.value = ""; 
-        document.querySelectorAll('.searchable-item').forEach(item => item.style.display = "flex");
-    }
-}
+};
 
 function copyToClipboard(rankName) {
     const winners = winnersHistory[rankName];
     if (!winners || winners.length === 0) return;
-    let textToCopy = "ID\tName\tDepartment\n"; 
+    let text = "ID\tName\tInfo\n";
     winners.forEach(w => {
-        const id = w[headers[0]] || "-";
-        const name = w[headers[1]] || "-";
-        const dept = w[headers[2]] || "-";
-        textToCopy += `${id}\t${name}\t${dept}\n`;
+        text += `${w[headers[0]]}\t${w[headers[1]]}\t${w[headers[2]] || ""}\n`;
     });
-    navigator.clipboard.writeText(textToCopy).then(() => {
-        alert(`คัดลอกรายชื่อ ${rankName} เรียบร้อย!`);
-    });
+    navigator.clipboard.writeText(text).then(() => alert("คัดลอกแล้ว!"));
 }
 
 function filterHistory() {
@@ -426,116 +463,18 @@ function filterHistory() {
     if (!activeTab) return;
     const items = activeTab.getElementsByClassName('searchable-item');
     for (let i = 0; i < items.length; i++) {
-        const text = items[i].textContent || items[i].innerText;
+        const text = items[i].textContent;
         items[i].style.display = (text.toLowerCase().indexOf(filter) > -1) ? "flex" : "none";
     }
 }
 
-/* --- Background Animation --- */
-const canvas = document.getElementById('starCanvas');
-const ctx = canvas.getContext('2d');
-let w, h, stars = [], planets = [];
-
-function resize() { 
-    w = canvas.width = window.innerWidth; 
-    h = canvas.height = window.innerHeight; 
-}
-window.addEventListener('resize', resize); 
-resize();
-
-class Star {
-    constructor() { this.reset(); }
-    reset() { 
-        this.x = (Math.random() - 0.5) * w * 2; 
-        this.y = (Math.random() - 0.5) * h * 2; 
-        this.z = Math.random() * w; 
-        this.pz = this.z; 
-    }
-    update() { 
-        this.z -= isWarping ? 80 : 2; 
-        if (this.z < 1) { 
-            this.reset(); 
-            this.z = w; 
-            this.pz = this.z; 
-        } 
-    }
-    draw() {
-        let sx = (this.x / this.z) * w + w / 2; 
-        let sy = (this.y / this.z) * h + h / 2;
-        let px = (this.x / this.pz) * w + w / 2; 
-        let py = (this.y / this.pz) * h + h / 2;
-        this.pz = this.z; 
-        let r = (1 - this.z / w) * 3;
-        ctx.beginPath(); 
-        ctx.moveTo(px, py); 
-        ctx.lineTo(sx, sy);
-        ctx.strokeStyle = isWarping ? starColor : "rgba(255,255,255,0.4)";
-        ctx.lineWidth = isWarping ? r : r / 2; 
-        ctx.stroke();
-    }
+function forceClearCache() {
+    localStorage.clear();
+    location.reload();
 }
 
-class Planet {
-    constructor() { this.reset(); }
-    reset() {
-        this.x = (Math.random() - 0.5) * w * 2;
-        this.y = (Math.random() - 0.5) * h * 2;
-        this.z = w + Math.random() * w; 
-        this.size = Math.random() * 30 + 10; 
-        const colors = ["#ff6b6b", "#4ecdc4", "#ffe66d", "#1a535c", "#f7fff7", "#ff9ff3", "#feca57"];
-        this.color = colors[Math.floor(Math.random() * colors.length)];
-        this.hasRing = Math.random() > 0.7; 
-        this.ringAngle = Math.random() * Math.PI;
-    }
-    update() {
-        this.z -= isWarping ? 60 : 1.5; 
-        if (this.z < 1) {
-            this.reset();
-            this.z = w + 500; 
-        }
-    }
-    draw() {
-        let sx = (this.x / this.z) * w + w / 2;
-        let sy = (this.y / this.z) * h + h / 2;
-        let r = (1 - this.z / w) * this.size;
-        if (r < 0) r = 0; 
-        if (this.hasRing) {
-            ctx.save();
-            ctx.translate(sx, sy);
-            ctx.rotate(this.ringAngle);
-            ctx.beginPath();
-            ctx.ellipse(0, 0, r * 2.2, r * 0.6, 0, 0, Math.PI * 2);
-            ctx.strokeStyle = this.color;
-            ctx.lineWidth = r * 0.4; 
-            ctx.globalAlpha = isWarping ? 0.5 : 0.3; 
-            ctx.stroke();
-            ctx.restore();
-        }
-        ctx.beginPath();
-        ctx.arc(sx, sy, r, 0, Math.PI * 2);
-        ctx.fillStyle = this.color;
-        ctx.globalAlpha = isWarping ? 0.8 : 1.0; 
-        ctx.fill();
-        ctx.globalAlpha = 1.0; 
-    }
-}
-
-stars = [];
-planets = []; 
-for(let i=0; i<3000; i++) stars.push(new Star());
-for(let i=0; i<30; i++) planets.push(new Planet()); 
-
-function animate() {
-    ctx.fillStyle = "#0c0c10"; 
-    ctx.fillRect(0, 0, w, h);
-    stars.forEach(s => { s.update(); s.draw(); });
-    planets.forEach(p => { p.update(); p.draw(); });
-    requestAnimationFrame(animate);
-}
-
-// Google Script URL
+// --- Google Sheet Logging (Optional) ---
 const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby_BJhSpOljb4B0rgocuzrV-ehaiL9Tq5yCWkJcAFiL85cGYUTGb5RF7jvczH99B7Ie0g/exec"; 
-
 function saveToSheet(winners, rankName) {
     if(!isAdmin) return; 
     const dataToSend = {
@@ -547,120 +486,48 @@ function saveToSheet(winners, rankName) {
         }))
     };
     fetch(GOOGLE_SCRIPT_URL, {
-        method: "POST",
-        mode: "no-cors",
+        method: "POST", mode: "no-cors",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(dataToSend)
-    }).then(() => {
-        console.log("Sent to sheet successfully!");
-    }).catch(err => console.error("Error sending to sheet:", err));
+    }).catch(err => console.error("Sheet Error:", err));
 }
 
-function forceClearCache() {
-    if(!confirm("ต้องการล้าง Cache เพื่ออัปเดตข้อมูลใช่ไหม?")) return;
-    localStorage.clear();
-    sessionStorage.clear();
-    const url = new URL(window.location.href);
-    url.searchParams.set('v', Date.now()); 
-    window.location.href = url.toString();
-}
+// --- Background Star Animation ---
+const canvas = document.getElementById('starCanvas');
+if (canvas) {
+    const ctx = canvas.getContext('2d');
+    let w, h, stars = [];
+    const resize = () => { w = canvas.width = window.innerWidth; h = canvas.height = window.innerHeight; };
+    window.addEventListener('resize', resize); resize();
 
-/* ==========================================================================
-    ส่วนที่ 4: การจัดการ UI และระบบ Admin (Clean Version)
-   ========================================================================== */
-
-// 🛰️ 1. ส่งออกฟังก์ชันให้ปุ่มใน HTML เรียกใช้งานได้ (สำคัญมาก!)
-window.resetUIForNextWish = resetUIForNextWish;
-window.goToLatestSession = goToLatestSession;
-
-// ✅ ฟังก์ชันวาร์ปกลับมาหน้าสุ่มปัจจุบัน
-function goToLatestSession() {
-    const resultScreen = document.getElementById('resultScreen');
-    if (resultScreen) resultScreen.style.display = 'none';
-
-    const container = document.querySelector('.container');
-    if (container) {
-        container.style.display = 'block';
-        container.style.opacity = 1;
+    class Star {
+        constructor() { this.reset(); }
+        reset() { 
+            this.x = (Math.random() - 0.5) * w * 2; 
+            this.y = (Math.random() - 0.5) * h * 2; 
+            this.z = Math.random() * w; 
+            this.pz = this.z; 
+        }
+        update() { 
+            this.z -= isWarping ? 80 : 2; 
+            if (this.z < 1) { this.reset(); this.z = w; this.pz = this.z; } 
+        }
+        draw() {
+            let sx = (this.x / this.z) * w + w / 2; let sy = (this.y / this.z) * h + h / 2;
+            let px = (this.x / this.pz) * w + w / 2; let py = (this.y / this.pz) * h + h / 2;
+            this.pz = this.z;
+            let r = (1 - this.z / w) * 3;
+            ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(sx, sy);
+            ctx.strokeStyle = isWarping ? starColor : "rgba(255,255,255,0.4)";
+            ctx.lineWidth = isWarping ? r : r / 2; ctx.stroke();
+        }
     }
-
-    // เรียกฟังก์ชันอัปเดตหน้าจอหลัก (ใช้ชื่อ updateUI ตามส่วนที่ 3 ของคุณ)
-    updateUI(); 
-    console.log("🛰 Re-synced to current session.");
-}
-
-// ✅ ฟังก์ชันคืนค่า UI (ล้างท่าโดนดูด + คืนร่างปุ่ม)
-function resetUIForNextWish() {
-    // 🌪️ 1. ล้าง Class อนิเมชั่น "โดนดูด" ออกให้หมด
-    const elements = document.querySelectorAll('.suck-in-animation');
-    elements.forEach(el => {
-        el.classList.remove('suck-in-animation');
-        el.style.opacity = 1;
-        el.style.transform = ''; // ล้างการหมุน/ย่อ
-        el.style.filter = '';    // ล้างความเบลอ
-    });
-
-    // 📺 2. คืนค่าหน้าจอหลัก
-    const container = document.querySelector('.container');
-    if(container) {
-        container.style.display = 'block';
-        container.style.opacity = 1;
-    }
-
-    // 👑 3. รีเฟรชปุ่ม Admin
-    refreshAdminUI();
-}
-
-// ✅ ฟังก์ชันคุมการเปิด-ปิดปุ่มตามสิทธิ์ (Admin/Viewer)
-function refreshAdminUI() {
-    const btnStart = document.getElementById('btnStart');
-    const msgWaiting = document.getElementById('msgWaiting');
-    const btnReset = document.getElementById('btnResetSystem');
-    const btnUpdate = document.getElementById('btnUpdate');
-    const btnGoToCurrent = document.getElementById('btnGoToCurrent'); // ใช้ ID ให้ตรงกับ HTML
-    const btnHistory = document.querySelector('.btn-history-toggle');
-
-    if (isAdmin) {
-        // 👑 ส่วนของ Admin
-        if(btnStart) btnStart.style.display = 'inline-block';
-        if(msgWaiting) msgWaiting.style.display = 'none';
-        if(btnReset) btnReset.style.display = 'block';
-        if(btnUpdate) btnUpdate.style.display = 'block';
-        if(btnGoToCurrent) btnGoToCurrent.style.display = 'inline-block'; // โชว์ปุ่มวาร์ป
-        if(btnHistory) btnHistory.style.display = 'block';
-    } else {
-        // 👤 ส่วนของ Viewer
-        if(btnStart) btnStart.style.display = 'none';
-        if(msgWaiting) msgWaiting.style.display = 'flex';
-        if(btnReset) btnReset.style.display = 'none';
-        if(btnUpdate) btnUpdate.style.display = 'none';
-        if(btnGoToCurrent) btnGoToCurrent.style.display = 'none';
-    }
-}
-
-// 🚀 รันระบบเมื่อโหลดหน้าเสร็จ
-document.addEventListener('DOMContentLoaded', () => {
-    refreshAdminUI();
+    for(let i=0; i<800; i++) stars.push(new Star());
     
-    // เริ่มรันดาวพื้นหลัง
-    if (typeof animate === 'function') {
-        animate();
+    function animate() {
+        ctx.fillStyle = "#0c0c10"; ctx.fillRect(0, 0, w, h);
+        stars.forEach(s => { s.update(); s.draw(); });
+        requestAnimationFrame(animate);
     }
-});
-
-window.killConn = function() {
-    if (typeof db !== 'undefined') {
-        const { goOffline } = firebaseDatabase; // ดึงมาจาก Module ที่เรา import ไว้ต้นไฟล์
-        // หรือถ้าใช้แบบเรียบง่ายที่สุดสำหรับ Firebase v9/v10
-        import("https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js").then((mod) => {
-            mod.goOffline(db);
-            console.log("🔌 ตัดการเชื่อมต่อแล้ว! (Connection ว่างขึ้น 1 ช่อง)");
-        });
-    } else {
-        console.error("หาตัวแปร db ไม่เจอครับ!");
-    }
-};
-
-
-
-
+    animate();
+}
