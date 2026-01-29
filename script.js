@@ -441,62 +441,105 @@ function renderHistory() {
     const list = document.getElementById('historyList');
     const tabsContainer = document.getElementById('historyTabs');
 
-    // 1. สร้าง Tab
+    // เคลียร์ค่าเก่าทิ้งก่อน
+    if (tabsContainer) tabsContainer.innerHTML = '';
+    list.innerHTML = '';
+
+    // เช็คว่ารางวัลไหนมีคนได้ไปแล้วบ้าง (filter เฉพาะอันที่มีข้อมูล)
     const activePrizes = prizes.filter(p => winnersHistory[p.name] && winnersHistory[p.name].length > 0);
-    
+
+    // กรณี: ยังไม่มีใครได้รางวัลเลย
     if (activePrizes.length === 0) {
-        if(tabsContainer) tabsContainer.innerHTML = '';
-        list.innerHTML = `<p style="text-align:center; color:#888; margin-top:50px;">ยังไม่มีการจับรางวัล</p>`;
+        list.innerHTML = `<div style="text-align:center; padding: 40px; color:#666;">
+            <p style="font-size: 50px; margin:0;">🧊</p>
+            <p>ยังไม่มีข้อมูลผู้โชคดี</p>
+        </div>`;
         return;
     }
 
-    let tabsHtml = '';
-    let contentHtml = '';
+    // สร้าง Search Box
+    let searchBox = document.createElement('div');
+    searchBox.className = 'search-container';
+    searchBox.innerHTML = `
+        <input type="text" id="historySearchInput" onkeyup="filterHistory()" 
+        placeholder="🔍 พิมพ์ชื่อเพื่อค้นหาในหน้านี้..." >
+    `;
+    list.appendChild(searchBox);
 
+    // เริ่มวนลูปสร้าง Tab และ เนื้อหา
     activePrizes.forEach((prize, index) => {
-        const isActive = index === 0 ? 'active' : '';
+        const isActive = (index === 0); // ให้แท็บแรกเป็น Active เสมอ
+        const activeClass = isActive ? 'active' : '';
         const winners = winnersHistory[prize.name];
-        
-        // ปุ่ม Tab
-        tabsHtml += `<button class="tab-btn ${isActive}" onclick="switchTab(event, 'tab-${index}')">${prize.name} <span>(${winners.length})</span></button>`;
-        
-        // เนื้อหาใน Tab
-        contentHtml += `<div id="tab-${index}" class="tab-content ${isActive}">`;
-        
-        // ปุ่ม Copy
-        contentHtml += `
-            <div style="text-align:right; margin-bottom:10px; position:sticky; top:0; background:#111; padding:5px; z-index:10;">
-                <button onclick="copyToClipboard('${prize.name}')" style="background:#4a90e2; color:white; border:none; padding:5px 15px; border-radius:5px; cursor:pointer;">📋 Copy All</button>
+
+        // 1. สร้างปุ่ม Tab ด้านบน
+        if (tabsContainer) {
+            const btn = document.createElement('button');
+            btn.className = `tab-btn ${activeClass}`;
+            btn.innerHTML = `${prize.name} <span class="badge">${winners.length}</span>`;
+            btn.style.borderColor = prize.color; // ให้ขอบสีตามรางวัล
+            btn.onclick = (e) => switchTab(e, `tab-${index}`);
+            tabsContainer.appendChild(btn);
+        }
+
+        // 2. สร้างกล่องรายชื่อ (Content)
+        const contentDiv = document.createElement('div');
+        contentDiv.id = `tab-${index}`;
+        contentDiv.className = `tab-content ${activeClass}`;
+
+        // ปุ่ม Copy แยกแต่ละรางวัล
+        contentDiv.innerHTML = `
+            <div style="text-align:right; margin-bottom:10px;">
+                <button onclick="copyToClipboard('${prize.name}')" class="btn-copy">
+                    📄 คัดลอกรายชื่อรางวัลนี้
+                </button>
             </div>
         `;
-        
-        // รายชื่อ
+
+        // ยัดรายชื่อคนลงไป
         winners.forEach(w => {
             const name = w[headers[1]] || "ไม่ระบุชื่อ";
-            const info = w[headers[2]] || "-"; 
-            contentHtml += `<div class="history-item searchable-item">${name} <span>${info}</span></div>`;
+            const dept = w[headers[2]] || "-";
+            const row = document.createElement('div');
+            row.className = 'history-item searchable-item';
+            row.style.borderLeft = `4px solid ${prize.color}`; // แถบสีข้างชื่อ
+            row.innerHTML = `
+                <div class="h-name">${name}</div>
+                <div class="h-dept">${dept}</div>
+            `;
+            contentDiv.appendChild(row);
         });
-        contentHtml += `</div>`;
+
+        list.appendChild(contentDiv);
     });
-
-    // ยัด HTML ลง Element (แยกกล่อง Tab กับ Content)
-    if(tabsContainer) tabsContainer.innerHTML = tabsHtml;
-    list.innerHTML = contentHtml;
-
-    // เพิ่ม Search Box (ถ้ายังไม่มี)
-    let searchBox = document.getElementById('historySearchBox');
-    if (!searchBox) {
-        searchBox = document.createElement('div');
-        searchBox.id = 'historySearchBox';
-        searchBox.style.padding = '10px 20px';
-        searchBox.innerHTML = `
-            <input type="text" id="historySearchInput" onkeyup="filterHistory()" placeholder="🔍 พิมพ์ชื่อเพื่อค้นหา..." 
-            style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #555; background: #222; color: #fff;">
-        `;
-        // แทรก Search Box ไว้ก่อนหน้า list
-        list.parentElement.insertBefore(searchBox, list);
-    }
 }
+
+// ฟังก์ชันสลับ Tab
+window.switchTab = function(event, tabId) {
+    // เอา active ออกจากทุกปุ่ม
+    document.querySelectorAll('.tab-btn').forEach(b => {
+        b.classList.remove('active');
+        b.style.backgroundColor = 'transparent';
+        b.style.color = '#aaa';
+    });
+    
+    // เอา active ออกจากทุกเนื้อหา
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+    // ใส่ active ให้ปุ่มที่กด
+    const btn = event.currentTarget;
+    btn.classList.add('active');
+    btn.style.backgroundColor = btn.style.borderColor; // เปลี่ยนสีพื้นหลังเป็นสีรางวัล
+    btn.style.color = '#000'; // ตัวหนังสือดำให้อ่านง่าย
+
+    // โชว์เนื้อหาที่เลือก
+    document.getElementById(tabId).classList.add('active');
+    
+    // ล้างช่องค้นหาเวลาเปลี่ยนแท็บ
+    const searchInput = document.getElementById('historySearchInput');
+    if(searchInput) searchInput.value = '';
+    filterHistory(); // รีเซ็ตรายการที่ซ่อน
+};
 
 window.switchTab = function(event, tabId) {                                           
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -591,6 +634,7 @@ if (canvas) {
     }
     animate();
 }
+
 
 
 
