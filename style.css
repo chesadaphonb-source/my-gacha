@@ -11,7 +11,7 @@
     --glass-bg: rgba(255, 255, 255, 0.03);
     --glass-border: rgba(255, 255, 255, 0.1);
     
-    /* Z-Index Hierarchy (ลำดับชั้น) */
+    /* Z-Index Hierarchy */
     --z-bg: -1;
     --z-content: 10;
     --z-meteor: 50;
@@ -28,21 +28,21 @@ body {
     font-family: 'Kanit', sans-serif;
     background-color: var(--bg-dark);
     color: #fff;
-    overflow: hidden; /* ห้ามสกรอลล์ที่ Body หลัก */
+    overflow: hidden; 
     height: 100vh;
     display: flex;
     justify-content: center;
     align-items: center;
 }
 
-/* Scrollbar สวยๆ ใช้ร่วมกันทั้งเว็บ */
+/* Scrollbar สวยๆ */
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: #1e1e24; }
 ::-webkit-scrollbar-thumb { background: #555; border-radius: 4px; }
 ::-webkit-scrollbar-thumb:hover { background: #777; }
 
 /* =================================================================
-   2. BACKGROUND & ANIMATIONS (Stars, Meteors)
+   2. BACKGROUND & ANIMATIONS
    ================================================================= */
 #starCanvas {
     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -57,19 +57,19 @@ body {
     background: #fff;
     border-radius: 50%;
     z-index: var(--z-meteor);
-    opacity: 0;
-    pointer-events: none;
+    opacity: 0; pointer-events: none;
     box-shadow: 0 0 30px 10px currentColor, 0 0 60px 30px white; 
 }
 .meteor-falling { animation: meteorFall 1.5s ease-in forwards; }
 
 #flashOverlay { 
     position: fixed; top:0; left:0; width:100%; height:100%; 
-    background: white; z-index: var(--z-flash); pointer-events: none; opacity: 0; transition: opacity 0.5s; 
+    background: white; z-index: var(--z-flash); pointer-events: none; 
+    opacity: 0; transition: opacity 0.5s; 
 }
 
 /* =================================================================
-   3. LAYOUT CONTAINERS & GLASS PANELS
+   3. LAYOUT CONTAINERS
    ================================================================= */
 .container {
     z-index: var(--z-content); 
@@ -78,14 +78,12 @@ body {
     transition: opacity 0.5s;
 }
 
-/* กล่อง Setup */
 .setup-box {
     background: rgba(0,0,0,0.7); padding: 30px; 
     border-radius: 20px; border: 1px solid #444;
     backdrop-filter: blur(10px);
 }
 
-/* กล่องกระจก (Glass Panel) สำหรับหน้าหลัก */
 .glass-panel {
     background: var(--glass-bg);
     backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
@@ -98,12 +96,11 @@ body {
 }
 
 /* =================================================================
-   4. UI ELEMENTS (Text, Inputs, Buttons)
+   4. UI ELEMENTS
    ================================================================= */
 .gold-text { color: var(--gold); margin-bottom: 5px; }
 .sub-text { color: #aaa; font-size: 14px; margin-bottom: 20px; }
 
-/* Input Fields */
 input[type="text"] {
     width: 80%; padding: 15px; border-radius: 10px; border: 1px solid #555;
     background: rgba(0,0,0,0.5); color: white; text-align: center; font-size: 16px;
@@ -113,13 +110,10 @@ input[type="text"]:focus {
     border-color: var(--gold); background: rgba(0,0,0,0.8);
 }
 
-/* --- BUTTONS SYSTEM --- */
-
-/* ปุ่มหลัก (Start Wish) */
+/* BUTTONS */
 .btn-wish {
     background: linear-gradient(180deg, var(--gold) 0%, var(--gold-dark) 100%);
-    color: #3b4255;
-    padding: 12px 30px; font-size: 18px; font-weight: 800;
+    color: #3b4255; padding: 12px 30px; font-size: 18px; font-weight: 800;
     border-radius: 50px; border: 3px solid #f0e6c6;
     cursor: pointer; box-shadow: 0 5px 15px rgba(0,0,0,0.3);
     white-space: nowrap; transition: transform 0.1s;
@@ -127,7 +121,6 @@ input[type="text"]:focus {
 .btn-wish:active { transform: scale(0.95); }
 .start-btn { font-size: 24px; padding: 20px 60px; }
 
-/* ปุ่มรอง (Secondary / Back) */
 .btn-secondary {
     background: transparent; border: 1px solid #777; color: #ddd; 
     font-size: 16px; padding: 10px 25px; border-radius: 50px; cursor: pointer;
@@ -135,7 +128,6 @@ input[type="text"]:focus {
 }
 .btn-secondary:hover { border-color: #fff; color: #fff; background: rgba(255,255,255,0.1); }
 
-/* ปุ่ม Next (ไปต่อ) */
 .btn-next {
     background: linear-gradient(90deg, #1e3c72 0%, #2a5298 100%);
     border: 1px solid var(--neon-blue); color: #fff;
@@ -146,7 +138,6 @@ input[type="text"]:focus {
 }
 .btn-next:hover { transform: scale(1.05); box-shadow: 0 0 25px rgba(74, 144, 226, 0.8); }
 
-/* ปุ่ม Admin (Ghost Style) */
 .admin-controls {
     display: flex; justify-content: center; align-items: center; gap: 15px;
     opacity: 0.6; transition: opacity 0.3s ease;
@@ -154,31 +145,26 @@ input[type="text"]:focus {
 .admin-controls:hover { opacity: 1; }
 
 .btn-admin {
-    background: transparent;
-    border: 1px solid rgba(255, 255, 255, 0.3);
+    background: transparent; border: 1px solid rgba(255, 255, 255, 0.3);
     color: #aaa; font-size: 12px; padding: 8px 16px;
     border-radius: 50px; cursor: pointer; transition: all 0.2s;
     text-transform: uppercase; letter-spacing: 1px;
 }
 .btn-admin:hover {
-    background: rgba(255, 255, 255, 0.1);
-    color: #fff; border-color: #fff; transform: translateY(-2px);
+    background: rgba(255, 255, 255, 0.1); color: #fff; border-color: #fff; transform: translateY(-2px);
 }
 .btn-admin.btn-danger:hover {
     border-color: var(--neon-red); color: var(--neon-red);
     background: rgba(255, 77, 77, 0.1); box-shadow: 0 0 15px rgba(255, 77, 77, 0.2);
 }
-
-/* ปุ่ม Re-Sync (สีฟ้าเด่น) */
 .btn-resync {
     background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
     border: 1px solid var(--neon-blue); color: white;
     box-shadow: 0 0 15px rgba(30, 60, 114, 0.5);
 }
-.btn-resync:hover { box-shadow: 0 0 20px rgba(74, 144, 226, 0.8); }
 
 /* =================================================================
-   5. SCREENS: RESULT SCREEN
+   5. RESULT SCREEN
    ================================================================= */
 #resultScreen {
     display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -193,25 +179,20 @@ input[type="text"]:focus {
 .result-header h1 { margin: 0; font-size: clamp(24px, 5vw, 40px); text-shadow: 0 0 15px currentColor; }
 
 .result-content {
-    flex: 1 1 auto; overflow-y: auto;
-    padding: 10px 20px 100px 20px; /* Padding ล่างเผื่อปุ่มบัง */
+    flex: 1 1 auto; overflow-y: auto; padding: 10px 20px 100px 20px;
     -webkit-overflow-scrolling: touch;
 }
 
 .result-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); 
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); 
     gap: 15px; max-width: 1200px; margin: 0 auto;
 }
 
 .card {
     background: linear-gradient(135deg, #2a2a35 0%, #1c1c22 100%);
-    border-radius: 10px; overflow: hidden;
-    border: 2px solid #444;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-    display: flex; flex-direction: column;
-    min-height: 200px; /* ลดความสูงลงหน่อยให้ดูดีบนมือถือ */
-    animation: popIn 0.4s ease-out backwards;
+    border-radius: 10px; overflow: hidden; border: 2px solid #444;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3); display: flex; flex-direction: column;
+    min-height: 200px; animation: popIn 0.4s ease-out backwards;
 }
 .card-header { background: #444; padding: 8px; font-weight: 800; text-align: center; color: #000; }
 .card-body { padding: 15px 10px; flex-grow: 1; display: flex; flex-direction: column; justify-content: center; text-align: center; gap: 5px; }
@@ -226,14 +207,14 @@ input[type="text"]:focus {
 }
 
 /* =================================================================
-   6. SCREENS: HISTORY MODAL & BUTTON
+   6. HISTORY MODAL (FIXED VERSION)
    ================================================================= */
 .btn-history-toggle {
     position: fixed; top: 20px; right: 20px; 
     background: rgba(255, 255, 255, 0.1); color: #ffd700; border: 2px solid #ffd700;
     padding: 12px 25px; border-radius: 50px; cursor: pointer; 
-    z-index: var(--z-history-btn);
-    font-weight: bold; backdrop-filter: blur(5px); box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+    z-index: var(--z-history-btn); font-weight: bold; 
+    backdrop-filter: blur(5px); box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
     transition: all 0.3s;
 }
 .btn-history-toggle:hover { background: #ffd700; color: #000; transform: scale(1.05); }
@@ -249,113 +230,85 @@ input[type="text"]:focus {
     display: flex; flex-direction: column; overflow: hidden; animation: fadeIn 0.3s;
 }
 
-/* Header & Tabs */
 .history-header { padding: 15px 20px; background: #25252d; border-bottom: 1px solid #333; display: flex; justify-content: space-between; align-items: center; }
 .history-header h2 { margin: 0; color: var(--gold); font-size: 22px; }
 .close-btn { background: none; border: none; color: #888; font-size: 28px; cursor: pointer; }
 .close-btn:hover { color: #fff; }
 
+/* --- TABS SYSTEM (CLEANED) --- */
 .history-tabs {
-    display: flex;
-    gap: 10px;               /* ระยะห่างระหว่างปุ่ม */
-    overflow-x: auto;        /* เลื่อนแนวนอนได้ */
-    padding: 10px 5px;       /* เว้นที่ให้เงา Glow */
-    margin-bottom: 20px;
+    display: flex; gap: 10px; overflow-x: auto; 
+    padding: 10px 5px; margin-bottom: 20px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1); 
-    
-    /* ซ่อน Scrollbar (แต่ยังใช้นิ้ว/เมาส์เลื่อนได้) */
-    scrollbar-width: none;     /* Firefox */
-    -ms-overflow-style: none;  /* IE/Edge */
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE */
 }
+.history-tabs::-webkit-scrollbar { display: none; } /* Chrome */
 
-/* ซ่อน Scrollbar สำหรับ Chrome/Safari */
-.history-tabs::-webkit-scrollbar {
-    display: none;
-}
-
-/* --- 2. ดีไซน์ปุ่ม Tab (ทรงแคปซูลอวกาศ) --- */
 .tab-btn {
-    background: rgba(255, 255, 255, 0.05); /* พื้นหลังจางๆ */
+    /* 1. จัดกึ่งกลางเป๊ะๆ */
+    display: inline-flex; align-items: center; justify-content: center;
+    
+    /* 2. ขนาดและรูปร่าง */
+    background: rgba(255, 255, 255, 0.05);
     border: 1px solid rgba(255, 255, 255, 0.3); 
-    color: #ccc;             /* สีตัวอักษรปกติ */
-    padding: 8px 16px;
-    border-radius: 50px;     /* ทรงมนรี */
-    cursor: pointer;
-    white-space: nowrap;     /* ห้ามขึ้นบรรทัดใหม่ */
-    font-family: 'Kanit', sans-serif;
-    font-size: 14px;
-    transition: all 0.3s ease;
-    flex-shrink: 0;          /* ห้ามปุ่มหด */
+    color: #ccc;
+    height: 42px; padding: 0 20px; /* สูงเท่ากันหมด */
+    border-radius: 50px;
+    
+    /* 3. ฟอนต์ */
+    font-family: 'Kanit', sans-serif; font-size: 15px; 
+    white-space: nowrap; cursor: pointer; transition: all 0.2s; flex-shrink: 0;
+    gap: 8px; /* ระยะห่างตัวหนังสือกับเลข */
 }
 
 .tab-btn:hover {
-    background: rgba(255, 255, 255, 0.15);
-    transform: translateY(-2px);
+    background: rgba(255, 255, 255, 0.15); transform: translateY(-2px);
 }
-
-/* ปุ่มตอนถูกเลือก (Active) */
 .tab-btn.active {
-    /* สีพื้นหลังจะถูก JS ใส่เข้ามาเองตามสีรางวัล */
-    color: #000 !important;       /* ตัวหนังสือดำ ตัดกับพื้นสว่าง */
-    font-weight: 800;
-    border-color: transparent;
-    box-shadow: 0 0 15px currentColor; /* แสงฟุ้งตามสีรางวัล */
+    color: #000 !important; font-weight: 700;
+    border-color: transparent; box-shadow: 0 0 15px currentColor;
     transform: scale(1.05);
 }
 
 .tab-btn .badge {
-    background: rgba(0,0,0,0.4);
-    color: inherit;
-    padding: 2px 8px;
-    border-radius: 10px;
-    font-size: 0.8em;
-    margin-left: 6px;
-    vertical-align: middle;
+    background: rgba(0,0,0,0.4); color: inherit;
+    padding: 3px 8px; border-radius: 12px; font-size: 0.8em; font-weight: 600;
+    line-height: 1;
 }
 
-/* --- 3. ส่วนเนื้อหารายชื่อ (ปรับให้สวยขึ้น) --- */
+/* --- LIST CONTENT --- */
 .history-content-wrapper { 
-    flex-grow: 1; 
-    overflow-y: auto; 
-    padding-right: 5px; /* เว้นที่ให้ scrollbar แนวตั้งนิดนึง */
+    flex-grow: 1; overflow-y: auto; padding-right: 5px; 
 }
-
-/* จัด scrollbar แนวตั้งให้สวยด้วย (เผื่อคนชื่อเยอะ) */
-.history-content-wrapper::-webkit-scrollbar {
-    width: 6px;
-}
-.history-content-wrapper::-webkit-scrollbar-thumb {
-    background: #444; 
-    border-radius: 3px;
-}
+.history-content-wrapper::-webkit-scrollbar { width: 6px; }
+.history-content-wrapper::-webkit-scrollbar-thumb { background: #444; border-radius: 3px; }
 
 .tab-content { display: none; animation: fadeIn 0.3s; }
 .tab-content.active { display: block; }
 
 .history-item {
-    display: flex; 
-    justify-content: space-between; 
-    align-items: center;
-    background: rgba(255, 255, 255, 0.03); /* พื้นหลังรายการจางๆ */
-    padding: 12px 15px; 
+    display: flex; justify-content: space-between; align-items: center;
+    background: rgba(255, 255, 255, 0.03); padding: 12px 15px; 
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-    margin-bottom: 5px;
-    border-radius: 6px;
+    margin-bottom: 5px; border-radius: 6px;
 }
+.history-item .h-name { color: #fff; font-weight: 500; font-size: 1rem; }
+.history-item .h-dept { color: #888; font-size: 0.85rem; }
 
-/* ชื่อคน */
-.history-item .h-name { 
-    color: #fff; 
-    font-weight: 500; 
-    font-size: 1rem; 
+/* Search & Copy */
+.search-container input {
+    width: 95%; padding: 12px; margin: 0 auto 15px auto; display: block;
+    background: #222; border: 1px solid #444; color: white; border-radius: 8px;
 }
-/* แผนก/สังกัด */
-.history-item .h-dept { 
-    color: #888; 
-    font-size: 0.85rem; 
+.btn-copy {
+    background: #444; color: #fff; border: none; padding: 5px 10px;
+    border-radius: 4px; cursor: pointer; font-size: 0.8rem;
 }
+.btn-copy:hover { background: #666; }
+
 /* =================================================================
-   7. SCREENS: LOADING & STANDBY (AUDIENCE)
+   7. LOADING & STANDBY
    ================================================================= */
 .loading-overlay {
     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -379,7 +332,6 @@ input[type="text"]:focus {
     animation: pulse 1s infinite alternate; color: var(--neon-blue);
 }
 
-/* Standby Radar */
 .standby-screen {
     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
     background: rgba(0,0,0,0.8); z-index: 50;
@@ -397,18 +349,24 @@ input[type="text"]:focus {
 }
 .standby-screen h2 { color: var(--neon-blue); font-size: 24px; text-shadow: 0 0 10px var(--neon-blue); }
 
-/* Message Waiting (Text Flicker) */
+/* Message Waiting */
 #msgWaiting {
-    display: none; justify-content: center; align-items: center; position: relative;
-    padding: 20px 40px; margin-top: 30px;
+    display: none; justify-content: center; align-items: center; gap: 15px;
+    padding: 15px 30px; margin-top: 20px;
     font-family: 'Courier New', monospace; color: #00f2ff;
-    border: 1px solid #00f2ff; border-radius: 4px; background: rgba(0, 20, 40, 0.6);
-    box-shadow: inset 0 0 15px rgba(0, 242, 255, 0.2);
-    animation: textFlicker 2s infinite;
+    font-size: 1.1rem; font-weight: bold; letter-spacing: 2px;
+    background: rgba(0, 20, 40, 0.6); border: 1px solid #00f2ff;
+    border-radius: 4px; box-shadow: 0 0 15px rgba(0, 242, 255, 0.1);
 }
+.mini-loader {
+    width: 18px; height: 18px; border: 2px solid rgba(0, 242, 255, 0.3);
+    border-top: 2px solid #00f2ff; border-radius: 50%;
+    animation: miniSpin 1s linear infinite;
+}
+.blink-text-soft { animation: textPulse 1.5s infinite alternate; }
 
 /* =================================================================
-   8. ANIMATION KEYFRAMES
+   8. KEYFRAMES
    ================================================================= */
 @keyframes meteorFall {
     0% { transform: translate(-50%, -50%) scale(0); opacity: 0; color: #fff; }
@@ -419,172 +377,11 @@ input[type="text"]:focus {
 @keyframes popIn { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
 @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+@keyframes miniSpin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 @keyframes pulse { from { opacity: 0.5; } to { opacity: 1; } }
-@keyframes textFlicker {
-    0%, 100% { opacity: 1; } 92% { opacity: 1; } 93% { opacity: 0.5; }
-    94% { opacity: 1; } 96% { opacity: 0.3; } 97% { opacity: 1; }
-}
-@keyframes blackHoleSuck {
-    0% { transform: scale(1) rotate(0deg); filter: blur(0px); opacity: 1; }
-    50% { transform: scale(0.5) rotate(180deg); filter: blur(4px); opacity: 0.5; }
-    100% { transform: scale(0) rotate(720deg); filter: blur(20px); opacity: 0; }
-}
-
-.suck-in-animation {
-    animation: suckInSimple 0.8s forwards ease-in;
-}
-
+@keyframes textPulse { from { opacity: 0.6; } to { opacity: 1; } }
 @keyframes suckInSimple {
-    0% {
-        transform: scale(1);
-        opacity: 1;
-        filter: blur(0px);
-    }
-    100% {
-        transform: scale(0); /* แค่ย่อให้เล็กสุด ไม่ต้องหมุน */
-        opacity: 0;
-        filter: blur(10px);
-    }
+    0% { transform: scale(1); opacity: 1; filter: blur(0px); }
+    100% { transform: scale(0); opacity: 0; filter: blur(10px); }
 }
-
-/* --- ส่วน Waiting Message (ปรับปรุงใหม่) --- */
-#msgWaiting {
-    display: none; /* JS จะเปลี่ยนเป็น flex เมื่อถึงเวลา */
-    justify-content: center;
-    align-items: center;
-    gap: 15px; /* ระยะห่างระหว่างวงแหวนกับข้อความ */
-    
-    padding: 15px 30px;
-    margin-top: 20px;
-    
-    font-family: 'Courier New', monospace; 
-    color: #00f2ff;
-    font-size: 1.1rem;
-    font-weight: bold;
-    letter-spacing: 2px;
-    
-    background: rgba(0, 20, 40, 0.6);
-    border: 1px solid #00f2ff;
-    border-radius: 4px;
-    box-shadow: 0 0 15px rgba(0, 242, 255, 0.1);
-}
-
-/* วงแหวนโหลดหมุนๆ (Mini Loader) */
-.mini-loader {
-    width: 18px; height: 18px;
-    border: 2px solid rgba(0, 242, 255, 0.3);
-    border-top: 2px solid #00f2ff;
-    border-radius: 50%;
-    animation: miniSpin 1s linear infinite;
-}
-
-@keyframes miniSpin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-
-/* อนิเมชั่นข้อความกระพริบ */
-.blink-text-soft {
-    animation: textPulse 1.5s infinite alternate;
-}
-
-@keyframes textPulse {
-    from { opacity: 0.6; }
-    to { opacity: 1; }
-}
-
-/* --- History Modal Styling --- */
-.history-header h2 {
-    color: #ffd700;
-    text-align: center;
-    margin-bottom: 20px;
-}
-
-/* กล่องรวมปุ่ม Tabs */
-.history-tabs {
-    display: flex;
-    gap: 10px;
-    overflow-x: auto;
-    padding-bottom: 10px;
-    margin-bottom: 15px;
-    border-bottom: 1px solid #333;
-}
-
-/* ดีไซน์ปุ่ม Tab */
-.tab-btn {
-    background: transparent;
-    border: 1px solid #555;
-    color: #aaa;
-    padding: 8px 16px;
-    border-radius: 20px;
-    cursor: pointer;
-    white-space: nowrap;
-    transition: all 0.3s;
-    font-family: 'Kanit', sans-serif;
-}
-
-.tab-btn .badge {
-    background: rgba(255,255,255,0.2);
-    padding: 2px 6px;
-    border-radius: 10px;
-    font-size: 0.8em;
-    margin-left: 5px;
-}
-
-.tab-btn.active {
-    font-weight: bold;
-    box-shadow: 0 0 10px rgba(255, 255, 255, 0.2);
-}
-
-/* กล่องเนื้อหา (ซ่อนไว้ก่อน ถ้า active ค่อยโชว์) */
-.tab-content {
-    display: none;
-    animation: fadeIn 0.3s ease;
-}
-
-.tab-content.active {
-    display: block;
-}
-
-/* รายการชื่อคน */
-.history-item {
-    display: flex;
-    justify-content: space-between;
-    background: rgba(255, 255, 255, 0.05);
-    padding: 12px;
-    margin-bottom: 8px;
-    border-radius: 6px;
-    /* border-left set by JS based on prize color */
-}
-
-.h-name { font-weight: bold; color: #fff; }
-.h-dept { color: #888; font-size: 0.9em; }
-
-/* ช่องค้นหา */
-.search-container input {
-    width: 100%;
-    padding: 12px;
-    margin-bottom: 15px;
-    background: #222;
-    border: 1px solid #444;
-    color: white;
-    border-radius: 8px;
-}
-
-.btn-copy {
-    background: #444;
-    color: #fff;
-    border: none;
-    padding: 5px 10px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-size: 0.8rem;
-}
-.btn-copy:hover { background: #666; }
-
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(5px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-
+.suck-in-animation { animation: suckInSimple 0.8s forwards ease-in; }
