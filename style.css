@@ -237,11 +237,25 @@ input[type="text"]:focus {
 
 /* --- TABS SYSTEM (CLEANED) --- */
 .history-tabs {
-    display: flex-shrink: 0; gap: 10px; overflow-x: auto; 
-    padding: 15px 10px; margin-bottom: 20px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1); 
-    scrollbar-width: none; /* Firefox */
-    -ms-overflow-style: none; /* IE */
+    /* 🔴 จุดที่ต้องแก้สำคัญที่สุด */
+    display: flex;            /* สั่งให้ลูกๆ เรียงแนวนอน */
+    flex-wrap: nowrap;        /* ห้ามขึ้นบรรทัดใหม่เด็ดขาด! */
+    overflow-x: auto;         /* ถ้าเกินขอบ ให้มี Scrollbar เลื่อนซ้ายขวา */
+    
+    /* จัดระยะห่าง */
+    gap: 10px;
+    padding: 15px 10px;       /* พื้นที่หายใจ กันปุ่มโดนตัด */
+    width: 100%;              /* กว้างเต็มจอ */
+    box-sizing: border-box;
+    
+    /* ตั้งค่าอื่นๆ */
+    flex-shrink: 0;           /* ตัวกล่องแท็บห้ามหด */
+    align-items: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    
+    /* ปิด Scrollbar (แต่ยังเลื่อนได้) */
+    scrollbar-width: none; 
+    -ms-overflow-style: none;
 }
 .history-tabs::-webkit-scrollbar { display: none; } /* Chrome */
 
@@ -458,6 +472,7 @@ input[type="text"]:focus {
 }
 
 .suck-in-animation { animation: suckInSimple 0.8s forwards ease-in; }
+
 
 
 
