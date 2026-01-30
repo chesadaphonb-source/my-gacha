@@ -238,7 +238,7 @@ input[type="text"]:focus {
 /* --- TABS SYSTEM (CLEANED) --- */
 .history-tabs {
     display: flex-shrink: 0; gap: 10px; overflow-x: auto; 
-    padding: 10px 5px; margin-bottom: 20px;
+    padding: 15px 10px; margin-bottom: 20px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1); 
     scrollbar-width: none; /* Firefox */
     -ms-overflow-style: none; /* IE */
@@ -332,6 +332,7 @@ input[type="text"]:focus {
     position: absolute;
     z-index: 10;
     top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
     box-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
     transition: all 0.5s ease;
 }
@@ -457,5 +458,6 @@ input[type="text"]:focus {
 }
 
 .suck-in-animation { animation: suckInSimple 0.8s forwards ease-in; }
+
 
 
