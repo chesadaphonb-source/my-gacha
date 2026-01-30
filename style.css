@@ -256,8 +256,16 @@ input[type="text"]:focus {
     /* ปิด Scrollbar (แต่ยังเลื่อนได้) */
     scrollbar-width: none; 
     -ms-overflow-style: none;
+   
+    cursor: grab; /* เมาส์เป็นรูปมือแบ */
+    user-select: none; /* ห้ามคลุมดำตัวหนังสือเวลาลาก */
 }
 .history-tabs::-webkit-scrollbar { display: none; } /* Chrome */
+
+.history-tabs.active {
+    cursor: grabbing; /* เมาส์เป็นรูปมือกำ */
+    cursor: -webkit-grabbing;
+}
 
 .tab-btn {
     /* 1. จัดกึ่งกลางเป๊ะๆ */
@@ -472,6 +480,7 @@ input[type="text"]:focus {
 }
 
 .suck-in-animation { animation: suckInSimple 0.8s forwards ease-in; }
+
 
 
 
