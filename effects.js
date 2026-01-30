@@ -1,11 +1,11 @@
-/* effects.js - Hyperdrive Version */
+/* effects.js - Movie Style Version (เส้นคม เล็ก พุ่งเร็ว) */
 
 const canvas = document.getElementById('starCanvas');
 const ctx = canvas.getContext('2d');
 
 let width, height;
 let stars = [];
-let starSpeed = 2; // ความเร็วปกติ
+let starSpeed = 2; 
 let targetSpeed = 2;
 let isWarping = false;
 
@@ -24,20 +24,16 @@ class Star {
     }
 
     reset(initial = false) {
-        // x, y คือตำแหน่งบนหน้าจอ
-        // z คือความลึก (ไกล = ค่ามาก, ใกล้ = ค่าน้อย)
         this.x = (Math.random() - 0.5) * width * 2;
         this.y = (Math.random() - 0.5) * height * 2;
         this.z = initial ? Math.random() * width : width;
-        this.pz = this.z; // ตำแหน่งก่อนหน้า (เอาไว้วาดหางดาว)
-        this.size = Math.random() * 2; // ขนาดดาวสุ่มๆ
+        this.pz = this.z;
+        this.size = Math.random(); // ลดขนาดดาวเริ่มต้นลง
     }
 
     update() {
-        // ขยับดาวเข้ามาหาหน้าจอ
         this.z -= starSpeed;
 
-        // ถ้าดาววิ่งเลยหน้าจอ (z < 1) ให้รีเซ็ตไปข้างหลังใหม่
         if (this.z < 1) {
             this.reset();
             this.z = width;
@@ -46,50 +42,47 @@ class Star {
     }
 
     draw() {
-        // สูตรแปลง 3D เป็น 2D
         let sx = (this.x / this.z) * width + width / 2;
         let sy = (this.y / this.z) * height + height / 2;
-
-        // สูตรหาตำแหน่งเก่า (เพื่อลากเส้นหาง)
         let px = (this.x / this.pz) * width + width / 2;
         let py = (this.y / this.pz) * height + height / 2;
 
         this.pz = this.z;
 
-        // คำนวณความสว่าง (ใกล้ = สว่าง)
+        // คำนวณความสว่าง
         let opacity = (1 - this.z / width);
-        if(isWarping) opacity = 0.8; // ตอน Warp ให้สว่างขึ้น
+        if(isWarping) opacity = 1; 
 
         ctx.beginPath();
-        ctx.moveTo(px, py); // จุดเก่า
-        ctx.lineTo(sx, sy); // จุดใหม่
+        ctx.moveTo(px, py);
+        ctx.lineTo(sx, sy);
         
-        // ถ้า Warp ให้เป็นเส้นยาวๆ สีขาว/ฟ้า
+        // 🔥 จุดที่แก้ไข: ปรับให้เส้นคม ไม่บวม
         if (isWarping) {
-            ctx.strokeStyle = `rgba(200, 230, 255, ${opacity})`;
-            ctx.lineWidth = this.size * (starSpeed / 10); // ยิ่งเร็วยิ่งเส้นใหญ่
+            // โหมด Warp: สีขาวสว่าง เส้นยาว แต่ล็อคความหนาไม่ให้เกิน 2px
+            ctx.strokeStyle = `rgba(200, 240, 255, ${opacity})`;
+            ctx.lineWidth = Math.min(this.size, 2); // ✅ ล็อคความหนาสูงสุดไว้ที่ 2
         } else {
-            // ถ้าปกติ ให้เป็นจุดๆ หรือเส้นสั้นๆ
+            // โหมดปกติ: เส้นบางๆ จางๆ
             ctx.strokeStyle = `rgba(255, 255, 255, ${opacity})`;
-            ctx.lineWidth = this.size;
+            ctx.lineWidth = this.size * 0.8; 
         }
         
         ctx.stroke();
     }
 }
 
-// สร้างดาว 500 ดวง
-for (let i = 0; i < 500; i++) {
+// สร้างดาว 800 ดวง (เพิ่มจำนวนให้ดูแน่นขึ้น)
+for (let i = 0; i < 800; i++) {
     stars.push(new Star());
 }
 
-// ลูปอนิเมชั่น
 function animate() {
-    // เคลียร์หน้าจอ (ทำจางๆ เพื่อให้เกิด Motion Blur นิดๆ)
-    ctx.fillStyle = "rgba(10, 10, 14, 0.4)"; 
+    // หางยาวขึ้นนิดหน่อยเพื่อให้ดูพุ่งแรง
+    ctx.fillStyle = isWarping ? "rgba(10, 10, 14, 0.2)" : "rgba(10, 10, 14, 0.4)"; 
     ctx.fillRect(0, 0, width, height);
 
-    // ปรับความเร็วแบบนุ่มนวล (Lerp)
+    // Lerp ความเร็ว
     starSpeed += (targetSpeed - starSpeed) * 0.1;
 
     stars.forEach(star => {
@@ -101,35 +94,33 @@ function animate() {
 }
 animate();
 
-/* ================= ฟังก์ชันสั่งงานจากภายนอก ================= */
+/* ================= ฟังก์ชันสั่งงาน ================= */
 
-// ฟังก์ชันเริ่ม Warp (เรียกจาก script.js ตอนกดสุ่ม)
-window.startMeteorShower = function() { // ใช้ชื่อเดิมเพื่อให้เข้ากับ script.js
+window.startMeteorShower = function() { 
     isWarping = true;
-    targetSpeed = 80; // 🚀 เร่งความเร็วแสง!
+    targetSpeed = 100; // 🚀 เพิ่มความเร็วให้สะใจ
     
-    // สั่งให้ดาวเคราะห์เบลอ
-    document.querySelectorAll('.bg-planet').forEach(el => el.classList.add('planet-warp'));
-    
-    // ซ่อน UI
+    // UI Animation
     const container = document.querySelector('.container');
+    const controls = document.querySelectorAll('.admin-controls, .btn-history-toggle');
+
     if(container) {
         container.style.transition = "opacity 0.5s, transform 0.5s";
         container.style.opacity = "0";
-        container.style.transform = "scale(1.2)"; // ขยาย UI ให้เหมือนเราพุ่งทะลุไป
+        container.style.transform = "scale(2) perspective(500px) translateZ(200px)"; // พุ่งทะลุจอ
     }
+    controls.forEach(el => el.style.opacity = "0");
 }
 
-// ฟังก์ชันหยุด Warp (เรียกตอนโชว์ผล)
 window.stopMeteorShower = function() {
     isWarping = false;
-    targetSpeed = 2; // กลับมาความเร็วปกติ
+    targetSpeed = 2;
     
-    // คืนค่าดาวเคราะห์
-    document.querySelectorAll('.bg-planet').forEach(el => el.classList.remove('planet-warp'));
+    // คืนค่า UI (ถ้าต้องการให้กลับมา)
+    // ปกติจะเปลี่ยนหน้าไปแล้ว ไม่ต้องคืนก็ได้ แต่ใส่ไว้เผื่อเทส
+    const container = document.querySelector('.container');
+    if(container) {
+        container.style.opacity = "1";
+        container.style.transform = "scale(1)";
+    }
 }
-
-/* ฟังก์ชัน initStars (เผื่อ script.js เรียกใช้ ก็ให้มันว่างๆ ไว้ หรือ return true) */
-window.initStars = function() {
-    console.log("Stars system ready");
-};
