@@ -99,38 +99,9 @@ onValue(gameRef, (snapshot) => {
     
     // อัปเดต UI และสถานะปุ่ม
     updateUI();
-    updateUIState(isAdmin); // ฟังก์ชันนี้จะคอยซ่อนปุ่มกดสุ่มให้คนดูเองครับ
+    updateUIState(isAdmin); 
 
     // Logic Animation (ส่วน Warp เหมือนเดิม)
-    if (state.status === 'WARPING') {
-         if (!isWarping) { 
-             starColor = state.activeColor || '#fff';
-             runWarpEffect(); 
-         }
-    } else if (state.status === 'SHOW_RESULT') {
-        stopWarpEffect();
-        if(state.lastRoundWinners) {
-            showResults(state.lastRoundWinners, prizes[currentTier]);
-        }
-    } else if (state.status === 'IDLE') {
-         if(document.getElementById('resultScreen').style.display === 'flex') {
-             closeResult();
-         }
-         stopWarpEffect();
-    }
-});
-
-    // อัปเดตข้อมูล Local
-    participants = state.participants || [];
-    headers = state.headers || [];
-    winnersHistory = state.history || {};
-    currentTier = state.currentTier || 0;
-    
-    // อัปเดต UI และสถานะปุ่ม
-    updateUI();
-    updateUIState(isAdmin); // ✅ เรียกใช้ฟังก์ชันจัดการปุ่มที่นี่
-
-    // Logic Animation
     if (state.status === 'WARPING') {
          if (!isWarping) { 
              starColor = state.activeColor || '#fff';
@@ -266,7 +237,7 @@ function nextRound() {
 }
 
 function resetGame() {
-    if(!isAdmin) return;
+    if(!isAdmin) return; 
     
     if(confirm("⚠️ ยืนยันการล้างระบบ?\n- ข้อมูลรายชื่อจะหายไป\n- ประวัติผู้ชนะจะหายไป")) {
         set(gameRef, null).then(() => {
@@ -329,7 +300,6 @@ function updateUIState(isAdmin) {
 
 function runWarpEffect() {
     isWarping = true;
-    const meteor = document.getElementById('meteor');
     const container = document.querySelector('.container');
     
     // ซ่อน UI ระหว่าง Warp
@@ -343,18 +313,15 @@ function runWarpEffect() {
         controls.forEach(el => el.style.opacity = 0);
     }, 700);
 
-    if(meteor) { 
-        meteor.style.color = starColor; 
-        meteor.classList.add('meteor-falling'); 
-    }
-    if(flash) { 
-        flash.style.background = starColor; 
-        setTimeout(() => { flash.style.opacity = 1; }, 1500); 
+    // เรียกฟังก์ชันใน effects.js ให้เร่งความเร็วดาว
+    if (window.startMeteorShower) {
+        window.startMeteorShower();
     }
 }
 
 function stopWarpEffect() {
     isWarping = false;
+    // เรียกฟังก์ชันใน effects.js ให้หยุด Warp
     if (window.stopMeteorShower) {
         window.stopMeteorShower();
     }
@@ -399,7 +366,7 @@ function showResults(winners, tier) {
             }
         }
         card.appendChild(bodyDiv);
-        grid.appendChild(card);     
+        grid.appendChild(card);      
     });
 
     document.getElementById('resultScreen').style.display = 'flex';
@@ -442,7 +409,7 @@ function goToLatestSession() {
 }
 
 /* ==========================================================================
-   ส่วนที่ 5: History & Background
+   ส่วนที่ 5: History
    ========================================================================== */
 function toggleHistory() {
     const modal = document.getElementById('historyModal');
@@ -605,52 +572,3 @@ function saveToSheet(winners, rankName) {
         body: JSON.stringify(dataToSend)
     }).catch(err => console.error("Sheet Error:", err));
 }
-
-// --- Background Star Animation ---
-const canvas = document.getElementById('starCanvas');
-if (canvas) {
-    const ctx = canvas.getContext('2d');
-    let w, h, stars = [];
-    const resize = () => { w = canvas.width = window.innerWidth; h = canvas.height = window.innerHeight; };
-    window.addEventListener('resize', resize); resize();
-
-    class Star {
-        constructor() { this.reset(); }
-        reset() { 
-            this.x = (Math.random() - 0.5) * w * 2; 
-            this.y = (Math.random() - 0.5) * h * 2; 
-            this.z = Math.random() * w; 
-            this.pz = this.z; 
-        }
-        update() { 
-            this.z -= isWarping ? 80 : 2; 
-            if (this.z < 1) { this.reset(); this.z = w; this.pz = this.z; } 
-        }
-        draw() {
-            let sx = (this.x / this.z) * w + w / 2; let sy = (this.y / this.z) * h + h / 2;
-            let px = (this.x / this.pz) * w + w / 2; let py = (this.y / this.pz) * h + h / 2;
-            this.pz = this.z;
-            let r = (1 - this.z / w) * 3;
-            ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(sx, sy);
-            ctx.strokeStyle = isWarping ? starColor : "rgba(255,255,255,0.4)";
-            ctx.lineWidth = isWarping ? r : r / 2; ctx.stroke();
-        }
-    }
-    for(let i=0; i<800; i++) stars.push(new Star());
-    
-    function animate() {
-        ctx.fillStyle = "#0c0c10"; ctx.fillRect(0, 0, w, h);
-        stars.forEach(s => { s.update(); s.draw(); });
-        requestAnimationFrame(animate);
-    }
-    animate();
-}
-
-
-
-
-
-
-
-
-
