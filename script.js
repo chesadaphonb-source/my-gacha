@@ -62,6 +62,8 @@ window.onload = function() {
         db.ref('gameState').on('value', (snapshot) => {
             const data = snapshot.val();
             if (data) handleSync(data);
+                winnersHistory = data;
+                console.log("Sync History เรียบร้อย");
         });
     }
 };
@@ -117,6 +119,7 @@ function loadData() {
             });
             
             prizes.forEach(p => winnersHistory[p.name] = []);
+            db.ref('history').remove();
             
             // เตรียมหน้าจอ Admin
             document.getElementById('setupContainer').style.display = 'none';
@@ -170,6 +173,7 @@ function triggerWish() {
     // บันทึกประวัติ
     if(!winnersHistory[tier.name]) winnersHistory[tier.name] = [];
     winnersHistory[tier.name].push(...winners);
+    db.ref('history/' + tier.name).set(winnersHistory[tier.name]);
     
     updateUI(true); // อัปเดตยอดคงเหลือที่เครื่อง Admin
 
@@ -447,3 +451,4 @@ function animate() {
     requestAnimationFrame(animate);
 }
 animate();
+
