@@ -210,7 +210,7 @@ function updateUI(showCount = false) {
         document.getElementById('poolCount').innerText = `คงเหลือผู้ลุ้นรางวัล: ${participants.length} คน`;
     }
     starColor = tier.color;
-}
+
 // Admin กดปุ่ม Start
 function triggerWish() {
     if(!isAdmin) return;
@@ -1020,6 +1020,7 @@ function resetGame() {
         window.location.reload();
     }, 500);
 }
+
 
 
 
