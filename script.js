@@ -172,27 +172,51 @@ function loadData() {
 function updateUI(showCount = false) {
     // เช็คว่าจบเกมหรือยัง
     if (currentTier >= prizes.length) {
-        document.getElementById('bannerDisplay').innerHTML = `
+        
+        let endHtml = `
             <h1 class="gold-text">🎉 จบกิจกรรม! 🎉</h1>
             <p style="color:#ddd; margin-bottom: 20px;">ขอบคุณผู้ร่วมสนุกทุกคน</p>
-            
-            <button onclick="resetGame()" style="
-                padding: 15px 40px;
-                font-size: 22px;
-                background: linear-gradient(45deg, #ff4757, #ff6b81);
-                color: white;
-                border: none;
-                border-radius: 50px;
-                cursor: pointer;
-                box-shadow: 0 0 20px rgba(255, 71, 87, 0.6);
-                font-weight: bold;
-                transition: transform 0.2s;
-            " onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
-                🔄 เริ่มกิจกรรมใหม่
-            </button>
         `;
+
+        // --- จุดที่แก้ไข: เช็คว่าเป็น Admin หรือไม่ ---
+        if (isAdmin) {
+            // ถ้าเป็น Admin: โชว์ปุ่ม Reset
+            endHtml += `
+                <button onclick="resetGame()" style="
+                    padding: 15px 40px;
+                    font-size: 22px;
+                    background: linear-gradient(45deg, #ff4757, #ff6b81);
+                    color: white;
+                    border: none;
+                    border-radius: 50px;
+                    cursor: pointer;
+                    box-shadow: 0 0 20px rgba(255, 71, 87, 0.6);
+                    font-weight: bold;
+                    transition: transform 0.2s;
+                " onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+                    🔄 เริ่มกิจกรรมใหม่
+                </button>
+            `;
+        } else {
+            // ถ้าเป็นคนดู: โชว์ข้อความรอ
+            endHtml += `
+                <div style="
+                    margin-top: 20px; 
+                    color: #888; 
+                    font-size: 18px; 
+                    background: rgba(255,255,255,0.05); 
+                    padding: 10px 20px; 
+                    border-radius: 20px;
+                    display: inline-block;
+                ">
+                    ⏳ กรุณารอเจ้าหน้าที่ดำเนินการ...
+                </div>
+            `;
+        }
+
+        document.getElementById('bannerDisplay').innerHTML = endHtml;
         
-        // ซ่อนปุ่ม Start Wish อันเดิม (จะได้ไม่กดซ้ำ)
+        // ซ่อนปุ่ม Start Wish อันเดิม
         document.getElementById('adminControls').style.display = 'none';
         return;
     }
@@ -530,4 +554,5 @@ function resetGame() {
         window.location.reload();
     }, 500);
 }
+
 
