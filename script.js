@@ -113,20 +113,33 @@ function loadData() {
     if(!url) return alert("กรุณาใส่ลิงก์ CSV");
 
     const btn = document.querySelector('#setupContainer button');
-    btn.innerText = "กำลังโหลด..."; btn.disabled = true;
+    const originalText = btn.innerText;
+    
+    // เปลี่ยนปุ่มเป็นสถานะโหลด
+    btn.innerText = "กำลังโหลด..."; 
+    btn.disabled = true;
 
     fetch(url)
-        .then(response => response.text())
+        .then(response => {
+            if (!response.ok) throw new Error("เข้าถึงไฟล์ไม่ได้ (เช็คลิงก์/สิทธิ์การเข้าถึง)");
+            return response.text();
+        })
         .then(csv => {
             const lines = csv.split(/\r?\n/).filter(line => line.trim() !== "");
+            if (lines.length < 2) throw new Error("ไฟล์ CSV ว่างเปล่าหรือรูปแบบผิด");
+
             headers = lines[0].split(',').map(h => h.trim());
             participants = lines.slice(1).map(line => {
                 const data = line.split(',');
+                // เช็คว่าข้อมูลมาครบไหม ถ้าไม่ครบให้ข้าม
+                if (data.length < 1) return null;
+                
                 let obj = {};
                 headers.forEach((h, i) => obj[h] = data[i] ? data[i].trim() : "-");
-                obj._id = data[0].trim();
+                // ถ้าไม่มี ID ให้ใช้ลำดับเป็น ID แทน
+                obj._id = data[0] ? data[0].trim() : `ID-${Math.random().toString(36).substr(2, 5)}`;
                 return obj;
-            });
+            }).filter(item => item !== null); // กรองแถวเสียทิ้ง
             
             prizes.forEach(p => winnersHistory[p.name] = []);
             db.ref('history').remove();
@@ -144,8 +157,16 @@ function loadData() {
             });
 
             updateUI(true);
+            alert(`โหลดข้อมูลสำเร็จ! ผู้เข้าร่วม: ${participants.length} คน`);
         })
-        .catch(err => { console.error(err); alert("Link Error"); btn.disabled=false; });
+        .catch(err => { 
+            console.error("Load Data Error:", err); 
+            alert("❌ เกิดข้อผิดพลาด:\n" + err.message + "\n\n(ลองเช็คลิงก์ CSV หรือกด F12 ดู Console)"); 
+            
+            // คืนค่าปุ่มให้กดใหม่ได้ ไม่ค้าง
+            btn.innerText = "โหลดรายชื่อ"; 
+            btn.disabled = false; 
+        });
 }
 
 function updateUI(showCount = false) {
@@ -509,3 +530,4 @@ function resetGame() {
         window.location.reload();
     }, 500);
 }
+
