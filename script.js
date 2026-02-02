@@ -40,6 +40,39 @@ if (urlParams.get('role') === 'admin') {
     isAdmin = true;
 }
 
+function getDisplayData(winner) {
+    // กรณี 1: เป็นข้อมูลแบบใหม่ (มี field ที่จัดมาแล้ว)
+    if (winner.displayId !== undefined && winner.displayName !== undefined) {
+        return {
+            id: winner.displayId,
+            name: winner.displayName,
+            details: winner.displayDetails || []
+        };
+    }
+
+    // กรณี 2: เป็นข้อมูลเก่า (Raw Object) -> ให้คำนวณสด
+    let keys = (headers && headers.length > 0) ? headers : Object.keys(winner).filter(k => k !== '_id');
+    
+    // คอลัมน์ที่ 0 = ID
+    const idVal = winner._id || winner[keys[0]] || "-";
+    // คอลัมน์ที่ 1 = Name (ถ้ามีแค่ 1 คอลัมน์ก็ใช้คอลัมน์ 0)
+    const nameVal = keys.length > 1 ? winner[keys[1]] : winner[keys[0]];
+
+    // รายละเอียด (ตั้งแต่คอลัมน์ที่ 2 เป็นต้นไป)
+    let detailList = [];
+    const startSubIndex = keys.length > 1 ? 2 : 1;
+    keys.slice(startSubIndex).forEach(k => {
+        if(winner[k] && winner[k] !== "-" && String(winner[k]).trim() !== "") {
+             detailList.push(`${k}: ${winner[k]}`);
+        }
+    });
+
+    return {
+        id: idVal,
+        name: nameVal,
+        details: detailList
+    };
+}
 /* =========================================
    1. INIT & LISTENER SYSTEM
    ========================================= */
@@ -288,65 +321,65 @@ function triggerWish() {
     const tier = prizes[currentTier];
     const drawCount = Math.min(tier.count, participants.length);
     
-    // 1. คำนวณผู้ชนะที่เครื่อง Admin
+    // สุ่มผู้โชคดี
     for (let i = participants.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [participants[i], participants[j]] = [participants[j], participants[i]];
     }
-    const winners = participants.slice(0, drawCount);
-    participants = participants.slice(drawCount); // ตัดรายชื่อออก
+    const rawWinners = participants.slice(0, drawCount);
+    participants = participants.slice(drawCount);
 
-    // บันทึกประวัติ
+    // ⭐ จัดระเบียบข้อมูลใหม่ (Format Data)
+    const displayWinners = rawWinners.map(w => {
+        const keys = (headers && headers.length > 0) ? headers : Object.keys(w).filter(k => k !== '_id');
+        let detailList = [];
+        const startSubIndex = keys.length > 1 ? 2 : 1;
+        keys.slice(startSubIndex).forEach(k => {
+            if(w[k] && w[k] !== "-" && w[k].trim() !== "") {
+                detailList.push(`${k}: ${w[k]}`);
+            }
+        });
+
+        return {
+            _raw: w, 
+            displayId: w._id || w[keys[0]] || "-",     
+            displayName: keys.length > 1 ? w[keys[1]] : w[keys[0]], 
+            displayDetails: detailList                 
+        };
+    });
+
+    // บันทึก History (ใช้ข้อมูลดิบ _raw เผื่อ Export)
     if(!winnersHistory[tier.name]) winnersHistory[tier.name] = [];
-    winnersHistory[tier.name].push(...winners);
+    winnersHistory[tier.name].push(...displayWinners.map(d => d._raw));
     db.ref('history/' + tier.name).set(winnersHistory[tier.name]);
     
-    updateUI(true); // อัปเดตยอดคงเหลือที่เครื่อง Admin
+    updateUI(true);
 
-    // ============================================
-    //  🚀 เพิ่มส่วนนี้: ส่งข้อมูลไป Google Sheet
-    // ============================================
-    // --- เริ่มส่วนส่งข้อมูลลง Google Sheet ---
+    // Google Sheet (ส่ง Display Data)
     if (typeof GOOGLE_SCRIPT_URL !== 'undefined' && GOOGLE_SCRIPT_URL) {
-
-        // แปลงข้อมูลให้เป็น id, name, dept ตามที่ Google Script รอรับ
-        const formattedWinners = winners.map(w => {
-            const keys = Object.keys(w).filter(k => k !== '_id');
-            return {
-                id: w._id || w[keys[0]] || "-",   
-                name: keys.length > 1 ? w[keys[1]] : w[keys[0]], 
-                dept: keys.length > 2 ? w[keys[2]] : "-" 
-            };
-        });
-
-        // 2. ยิงข้อมูลออกไป (ใช้ mode: 'no-cors' เพื่อไม่ให้ติด browser error)
+        const sheetData = displayWinners.map(d => ({
+            id: d.displayId,
+            name: d.displayName,
+            dept: d.displayDetails[0] || "-" 
+        }));
         fetch(GOOGLE_SCRIPT_URL, {
             method: "POST",
-            mode: "no-cors", 
+            mode: "no-cors",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                rank: tier.name,
-                winners: formattedWinners
-            })
-        }).then(() => {
-            console.log("Sent to Google Sheet successfully");
-        }).catch(err => {
-            console.error("Failed to send to Sheet", err);
-        });
+            body: JSON.stringify({ rank: tier.name, winners: sheetData })
+        }).catch(err => console.error(err));
     }
 
-    // 2. ส่งสัญญาณไป Firebase (State: WARPING)
-    // ส่งข้อมูลผู้ชนะไปด้วยเลย แต่ยังไม่โชว์
+    // ส่งข้อมูลที่จัดแล้วขึ้น Firebase
     db.ref('gameState').set({
         status: 'WARPING',
         tierIndex: currentTier,
-        winners: winners,
+        winners: displayWinners, // <--- ส่งตัวใหม่
         headers: headers,
         timestamp: Date.now()
     });
 
-    // 3. เล่น Animation ที่เครื่อง Admin ด้วย
-    playWarpAnimation(winners);
+    playWarpAnimation(displayWinners);
 }
 
 // ฟังก์ชัน Animation (ใช้ร่วมกันทั้ง Admin และ Audience)
@@ -384,50 +417,42 @@ function playWarpAnimation(winners) {
     }, 1800);
 }
 
+// --- 1.3 ฟังก์ชัน showResults (วางทับอันเดิม) ---
 function showResults(winners, tier) {
     const grid = document.getElementById('resultGrid');
     document.getElementById('resultTitle').innerText = tier.name;
     document.getElementById('resultTitle').style.color = tier.color;
     grid.innerHTML = "";
 
-    winners.forEach((winner, index) => {
+    winners.forEach((w, index) => {
+        // ⭐ เรียกใช้ Helper แปลงข้อมูล
+        const data = getDisplayData(w); 
+
         const card = document.createElement('div');
         card.className = 'card';
         card.style.borderColor = tier.color;
         card.style.animationDelay = `${index * 0.05}s`;
 
-        // ดึงชื่อคอลัมน์ทั้งหมด (ไม่เอา _id)
-        let keys = (headers && headers.length > 0) ? headers : Object.keys(winner).filter(k => k !== '_id');
-        
-        // 1. ส่วนหัว: ใช้ ID (คอลัมน์แรก)
-        const idVal = winner._id || winner[keys[0]] || "ID"; 
-        
-        // 2. ตัวหนังสือใหญ่ (ชื่อ): ให้ขยับไปใช้คอลัมน์ที่ 2 (index 1) แทน
-        // ถ้าข้อมูลมีคอลัมน์เดียวค่อยกลับไปใช้คอลัมน์แรก
-        const nameVal = keys.length > 1 ? winner[keys[1]] : winner[keys[0]];
-        
-        // 3. ข้อมูลย่อย: ให้เริ่มแสดงตั้งแต่คอลัมน์ที่ 3 (index 2) เป็นต้นไป
-        // (จะได้ไม่เอา ชื่อ กับ ID มาวนโชว์ซ้ำข้างล่าง)
-        let subInfo = "";
-        const startSubIndex = keys.length > 1 ? 2 : 1;
-        
-        keys.slice(startSubIndex).forEach(k => {
-            if(winner[k] && winner[k] !== "-" && winner[k] !== "") 
-                subInfo += `<div class="info-sub">${k}: ${winner[k]}</div>`;
+        let subInfoHTML = "";
+        data.details.forEach(info => {
+             subInfoHTML += `<div class="info-sub">${info}</div>`;
         });
 
         card.innerHTML = `
-            <div class="card-header" style="background:${tier.color};">${idVal}</div>
+            <div class="card-header" style="background:${tier.color};">
+                ${data.id}
+            </div>
             <div class="card-body">
-                <div class="info-main" style="color:${tier.color}">${nameVal}</div>
-                ${subInfo}
+                <div class="info-main" style="color:${tier.color}">
+                    ${data.name}
+                </div>
+                ${subInfoHTML}
             </div>
         `;
         grid.appendChild(card);
     });
     document.getElementById('resultScreen').style.display = 'flex';
 }
-
 // Admin กดปิดหน้าต่างผลรางวัล
 function closeResult() {
     document.getElementById('resultScreen').style.display = 'none';
@@ -458,22 +483,16 @@ function nextRound() {
    ========================================= */
 
 function toggleHistory() {
-    // ... (ใช้โค้ดเดิมส่วน History Modal ได้เลย ไม่ต้องแก้) ...
-    // ใส่โค้ดส่วน toggleHistory อันเดิมลงไปตรงนี้
     const modal = document.getElementById('historyModal');
     const list = document.getElementById('historyList');
-    
+
     if (modal.style.display === 'flex') {
         modal.style.display = 'none';
     } else {
-        // *หมายเหตุ* ฝั่ง Audience จะไม่มี winnersHistory สะสมไว้ในตัวแปร local
-        // ถ้ายากให้ Audience ดู History ได้ด้วย ต้องดึงจาก Firebase
-        // แต่เพื่อความง่ายตอนนี้ ให้ Admin ดูได้คนเดียวไปก่อน หรือถ้ามีข้อมูล local ก็โชว์ได้
-        
         const activePrizes = prizes.filter(p => winnersHistory[p.name] && winnersHistory[p.name].length > 0);
 
         if (activePrizes.length === 0) {
-             list.innerHTML = `<p style="text-align:center; color:#888; margin-top:50px; font-size: 16px;">ยังไม่มีการจับรางวัล (Admin only)</p>`;
+             list.innerHTML = `<p style="text-align:center; color:#888; margin-top:50px;">ยังไม่มีผู้โชคดี</p>`;
         } else {
             let tabsHtml = `<div class="history-tabs" id="tabsContainer">`;
             let contentHtml = `<div class="history-content-wrapper">`;
@@ -484,17 +503,21 @@ function toggleHistory() {
                 
                 tabsHtml += `
                     <button class="tab-btn ${isActive}" onclick="switchTab(event, 'tab-${index}')">
-                        ${prize.name} <span style="font-size: 0.85em; opacity: 0.8; margin-left: 4px;">(${winners.length})</span>
+                        ${prize.name} <span style="opacity:0.7">(${winners.length})</span>
                     </button>
                 `;
 
                 contentHtml += `<div id="tab-${index}" class="tab-content ${isActive}">`;
                 winners.forEach(w => {
-                    // ดึงค่าแบบ Dynamic
-                    const keys = Object.keys(w).filter(k => k !== '_id');
-                    const name = w[keys[0]] || "Name";
-                    const dept = w[keys[1]] || "-"; 
-                    contentHtml += `<div class="history-item">${name} <span>${dept}</span></div>`;
+                    // ⭐ ใช้ Helper ตรงนี้ด้วย
+                    const data = getDisplayData(w);
+                    const subText = data.details.length > 0 ? data.details[0] : "-";
+
+                    contentHtml += `
+                        <div class="history-item">
+                            <div style="font-weight:bold;">${data.name}</div>
+                            <div style="font-size:0.8em; opacity:0.7;">${subText}</div>
+                        </div>`;
                 });
                 contentHtml += `</div>`;
             });
@@ -502,29 +525,18 @@ function toggleHistory() {
             tabsHtml += `</div>`;
             contentHtml += `</div>`;
             list.innerHTML = tabsHtml + contentHtml;
-             // --- Enable Drag Scroll ---
+             
+             // Drag Scroll Logic (คงเดิม)
              const slider = document.getElementById('tabsContainer');
              let isDown = false, startX, scrollLeft;
- 
-             slider.addEventListener('mousedown', (e) => {
-                 isDown = true; slider.classList.add('dragging');
-                 startX = e.pageX - slider.offsetLeft;
-                 scrollLeft = slider.scrollLeft;
-             });
+             slider.addEventListener('mousedown', (e) => { isDown = true; slider.classList.add('dragging'); startX = e.pageX - slider.offsetLeft; scrollLeft = slider.scrollLeft; });
              slider.addEventListener('mouseleave', () => { isDown = false; slider.classList.remove('dragging'); });
              slider.addEventListener('mouseup', () => { isDown = false; slider.classList.remove('dragging'); });
-             slider.addEventListener('mousemove', (e) => {
-                 if (!isDown) return;
-                 e.preventDefault();
-                 const x = e.pageX - slider.offsetLeft;
-                 const walk = (x - startX) * 2;
-                 slider.scrollLeft = scrollLeft - walk;
-             });
+             slider.addEventListener('mousemove', (e) => { if (!isDown) return; e.preventDefault(); const x = e.pageX - slider.offsetLeft; const walk = (x - startX) * 2; slider.scrollLeft = scrollLeft - walk; });
         }
         modal.style.display = 'flex';
     }
 }
-
 window.switchTab = function(event, tabId) {
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     event.currentTarget.classList.add('active');
@@ -631,4 +643,5 @@ function resetGame() {
     // การ reload จะทำให้ js เริ่มทำงานใหม่ตั้งแต่บรรทัดแรก
     window.location.reload();
 }
+
 
