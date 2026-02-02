@@ -481,6 +481,44 @@ input[type="text"]:focus {
 
 .suck-in-animation { animation: suckInSimple 0.8s forwards ease-in; }
 
+/* =========================================
+   BACKGROUND PLANETS (ดาวลอยหลังฉาก)
+   ========================================= */
+.bg-planet {
+    position: fixed;
+    border-radius: 50%;
+    z-index: -5; /* อยู่หลังสุด */
+    opacity: 0.6;
+}
+
+/* ดาวดวงที่ 1 (ซ้ายบน - เป็นดาวเสาร์) */
+.planet-1 {
+    width: 120px; height: 120px;
+    top: 10%; left: 5%;
+    background: linear-gradient(135deg, #f39c12, #d35400);
+    box-shadow: 0 0 30px rgba(243, 156, 18, 0.3);
+    animation: floatIce 8s infinite ease-in-out;
+}
+/* วงแหวนดาวเสาร์ */
+.planet-1::after {
+    content: ''; position: absolute;
+    top: 50%; left: 50%;
+    width: 160px; height: 20px;
+    border-radius: 50%;
+    border: 4px solid rgba(255,255,255,0.3);
+    transform: translate(-50%, -50%) rotate(-20deg);
+}
+
+/* ดาวดวงที่ 2 (ขวาล่าง - เป็นดาวน้ำแข็ง) */
+.planet-2 {
+    width: 80px; height: 80px;
+    bottom: 15%; right: 10%;
+    background: radial-gradient(circle at 30% 30%, #a1c4fd, #192f6a);
+    box-shadow: 0 0 20px rgba(161, 196, 253, 0.5);
+    animation: floatIce 6s infinite ease-in-out reverse;
+}
+
+
 
 
 
