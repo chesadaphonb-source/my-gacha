@@ -73,6 +73,7 @@ window.onload = function() {
             if (data) {
                 winnersHistory = data; 
                 console.log("History updated from Firebase");
+            }
         });
     }
 };
@@ -460,5 +461,6 @@ function animate() {
     requestAnimationFrame(animate);
 }
 animate();
+
 
 
