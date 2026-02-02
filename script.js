@@ -41,7 +41,7 @@ if (urlParams.get('role') === 'admin') {
 }
 
 function getDisplayData(winner) {
-    // กรณี 1: เป็นข้อมูลแบบใหม่ (มี field ที่จัดมาแล้ว)
+    // กรณี 1: ข้อมูลแบบใหม่ (มี field ที่จัดมาแล้ว)
     if (winner.displayId !== undefined && winner.displayName !== undefined) {
         return {
             id: winner.displayId,
@@ -49,16 +49,10 @@ function getDisplayData(winner) {
             details: winner.displayDetails || []
         };
     }
-
-    // กรณี 2: เป็นข้อมูลเก่า (Raw Object) -> ให้คำนวณสด
+    // กรณี 2: ข้อมูลเก่า หรือคนดูที่เพิ่งได้ Headers มา (คำนวณสด)
     let keys = (headers && headers.length > 0) ? headers : Object.keys(winner).filter(k => k !== '_id');
-    
-    // คอลัมน์ที่ 0 = ID
     const idVal = winner._id || winner[keys[0]] || "-";
-    // คอลัมน์ที่ 1 = Name (ถ้ามีแค่ 1 คอลัมน์ก็ใช้คอลัมน์ 0)
     const nameVal = keys.length > 1 ? winner[keys[1]] : winner[keys[0]];
-
-    // รายละเอียด (ตั้งแต่คอลัมน์ที่ 2 เป็นต้นไป)
     let detailList = [];
     const startSubIndex = keys.length > 1 ? 2 : 1;
     keys.slice(startSubIndex).forEach(k => {
@@ -66,13 +60,9 @@ function getDisplayData(winner) {
              detailList.push(`${k}: ${winner[k]}`);
         }
     });
-
-    return {
-        id: idVal,
-        name: nameVal,
-        details: detailList
-    };
+    return { id: idVal, name: nameVal, details: detailList };
 }
+
 /* =========================================
    1. INIT & LISTENER SYSTEM
    ========================================= */
@@ -318,10 +308,15 @@ function triggerWish() {
     if(!isAdmin) return;
     if(participants.length === 0) return alert("รายชื่อหมดแล้ว!");
 
+    // 1. ส่ง Headers ขึ้น Cloud (เพื่อให้คนดูรู้จักโครงสร้าง CSV)
+    if(headers && headers.length > 0) {
+        db.ref('config/headers').set(headers);
+    }
+
     const tier = prizes[currentTier];
     const drawCount = Math.min(tier.count, participants.length);
     
-    // สุ่มผู้โชคดี
+    // 2. สุ่มผู้โชคดี
     for (let i = participants.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [participants[i], participants[j]] = [participants[j], participants[i]];
@@ -329,33 +324,26 @@ function triggerWish() {
     const rawWinners = participants.slice(0, drawCount);
     participants = participants.slice(drawCount);
 
-    // ⭐ จัดระเบียบข้อมูลใหม่ (Format Data)
+    // 3. จัด Format ข้อมูล (ใช้ Helper ช่วย หรือทำเองก็ได้)
     const displayWinners = rawWinners.map(w => {
-        const keys = (headers && headers.length > 0) ? headers : Object.keys(w).filter(k => k !== '_id');
-        let detailList = [];
-        const startSubIndex = keys.length > 1 ? 2 : 1;
-        keys.slice(startSubIndex).forEach(k => {
-            if(w[k] && w[k] !== "-" && w[k].trim() !== "") {
-                detailList.push(`${k}: ${w[k]}`);
-            }
-        });
-
+        // ใช้ getDisplayData ช่วยจัดระเบียบเบื้องต้น แล้วเติม _raw กลับเข้าไป
+        const d = getDisplayData(w); 
         return {
-            _raw: w, 
-            displayId: w._id || w[keys[0]] || "-",     
-            displayName: keys.length > 1 ? w[keys[1]] : w[keys[0]], 
-            displayDetails: detailList                 
+            _raw: w, // เก็บข้อมูลดิบ
+            displayId: d.id,
+            displayName: d.name,
+            displayDetails: d.details
         };
     });
 
-    // บันทึก History (ใช้ข้อมูลดิบ _raw เผื่อ Export)
+    // 4. บันทึกประวัติ (ใช้ตัวที่จัด Format แล้ว)
     if(!winnersHistory[tier.name]) winnersHistory[tier.name] = [];
-    winnersHistory[tier.name].push(...displayWinners.map(d => d._raw));
+    winnersHistory[tier.name].push(...displayWinners); 
     db.ref('history/' + tier.name).set(winnersHistory[tier.name]);
     
     updateUI(true);
 
-    // Google Sheet (ส่ง Display Data)
+    // 5. ส่ง Google Sheet (ถ้ามี)
     if (typeof GOOGLE_SCRIPT_URL !== 'undefined' && GOOGLE_SCRIPT_URL) {
         const sheetData = displayWinners.map(d => ({
             id: d.displayId,
@@ -370,12 +358,11 @@ function triggerWish() {
         }).catch(err => console.error(err));
     }
 
-    // ส่งข้อมูลที่จัดแล้วขึ้น Firebase
+    // 6. ส่งสัญญาณ Animation
     db.ref('gameState').set({
         status: 'WARPING',
         tierIndex: currentTier,
-        winners: displayWinners, // <--- ส่งตัวใหม่
-        headers: headers,
+        winners: displayWinners, // ส่งตัวสวยๆ ไป
         timestamp: Date.now()
     });
 
@@ -643,5 +630,23 @@ function resetGame() {
     // การ reload จะทำให้ js เริ่มทำงานใหม่ตั้งแต่บรรทัดแรก
     window.location.reload();
 }
+
+db.ref('config/headers').on('value', (snapshot) => {
+    if (snapshot.exists()) {
+        const serverHeaders = snapshot.val();
+        // ถ้าฝั่งเราไม่มี headers (เช่น เป็นคนดู) ให้โหลดจาก Server
+        if (!headers || headers.length === 0) {
+            headers = serverHeaders;
+            console.log("✅ Sync Headers สำเร็จ:", headers);
+            // ถ้าเปิดหน้าประวัติอยู่ ให้รีเฟรชใหม่
+            const historyModal = document.getElementById('historyModal');
+            if(historyModal && historyModal.style.display === 'flex') {
+                if(typeof toggleHistory === 'function') {
+                    toggleHistory(); setTimeout(toggleHistory, 50); 
+                }
+            }
+        }
+    }
+});
 
 
