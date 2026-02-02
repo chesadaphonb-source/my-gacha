@@ -315,27 +315,29 @@ function showResults(winners, tier) {
     document.getElementById('resultTitle').style.color = tier.color;
     grid.innerHTML = "";
 
-    // ป้องกัน Error กรณีไม่มี Header (ฝั่ง Audience)
-    // ฝั่ง Audience เราไม่มี headers เราต้องเดา key เอา หรือรับข้อมูลดิบมา
-    // *เทคนิค:* ใน winners ที่ส่งผ่าน Firebase มันเป็น Object สมบูรณ์อยู่แล้ว
-    // แต่เราไม่รู้ว่า Key ไหนคือ ID หรือ ชื่อ
-    // ดังนั้นเราจะใช้ Object.keys เพื่อดึงข้อมูล
-
     winners.forEach((winner, index) => {
         const card = document.createElement('div');
         card.className = 'card';
         card.style.borderColor = tier.color;
         card.style.animationDelay = `${index * 0.05}s`;
 
-        // ดึงข้อมูลแบบ Dynamic (เพราะ Audience ไม่มีตัวแปร headers)
+        // ดึงชื่อคอลัมน์ทั้งหมด (ไม่เอา _id)
         const keys = Object.keys(winner).filter(k => k !== '_id');
-        const idVal = winner._id || winner[keys[0]] || "ID"; 
-        const nameVal = winner[keys[0]] || winner[keys[1]] || ""; // เดาว่าคอลัมน์แรกๆ คือชื่อ
         
-        // สร้าง Sub Info
+        // 1. ส่วนหัว: ใช้ ID (คอลัมน์แรก)
+        const idVal = winner._id || winner[keys[0]] || "ID"; 
+        
+        // 2. ตัวหนังสือใหญ่ (ชื่อ): ให้ขยับไปใช้คอลัมน์ที่ 2 (index 1) แทน
+        // ถ้าข้อมูลมีคอลัมน์เดียวค่อยกลับไปใช้คอลัมน์แรก
+        const nameVal = keys.length > 1 ? winner[keys[1]] : winner[keys[0]];
+        
+        // 3. ข้อมูลย่อย: ให้เริ่มแสดงตั้งแต่คอลัมน์ที่ 3 (index 2) เป็นต้นไป
+        // (จะได้ไม่เอา ชื่อ กับ ID มาวนโชว์ซ้ำข้างล่าง)
         let subInfo = "";
-        keys.slice(1).forEach(k => { // ข้ามชื่อไป
-            if(winner[k] && winner[k] !== "-") 
+        const startSubIndex = keys.length > 1 ? 2 : 1;
+        
+        keys.slice(startSubIndex).forEach(k => {
+            if(winner[k] && winner[k] !== "-" && winner[k] !== "") 
                 subInfo += `<div class="info-sub">${k}: ${winner[k]}</div>`;
         });
 
@@ -554,5 +556,6 @@ function resetGame() {
         window.location.reload();
     }, 500);
 }
+
 
 
