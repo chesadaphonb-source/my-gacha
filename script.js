@@ -238,6 +238,10 @@ function updateUI(showCount = false) {
     }
     starColor = tier.color;
 }
+
+// --- ส่วนหัวไฟล์ประกาศตัวแปรเพิ่ม ---
+const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby_BJhSpOljb4B0rgocuzrV-ehaiL9Tq5yCWkJcAFiL85cGYUTGb5RF7jvczH99B7Ie0g/exec";
+
 // Admin กดปุ่ม Start
 function triggerWish() {
     if(!isAdmin) return;
@@ -260,6 +264,36 @@ function triggerWish() {
     db.ref('history/' + tier.name).set(winnersHistory[tier.name]);
     
     updateUI(true); // อัปเดตยอดคงเหลือที่เครื่อง Admin
+
+    // ============================================
+    //  🚀 เพิ่มส่วนนี้: ส่งข้อมูลไป Google Sheet
+    // ============================================
+    if (GOOGLE_SCRIPT_URL) {
+        // 1. แปลงข้อมูลให้เป็น Format ที่ Google Script อ่านรู้เรื่อง (id, name, dept)
+        const formattedWinners = winners.map(w => {
+            const keys = Object.keys(w).filter(k => k !== '_id');
+            return {
+                id: w._id || w[keys[0]] || "-",   // หยิบ ID
+                name: keys.length > 1 ? w[keys[1]] : w[keys[0]], // หยิบชื่อ
+                dept: keys.length > 2 ? w[keys[2]] : "-" // หยิบสังกัด (ถ้ามี)
+            };
+        });
+
+        // 2. ยิงข้อมูลออกไป (ใช้ mode: 'no-cors' เพื่อไม่ให้ติด browser error)
+        fetch(GOOGLE_SCRIPT_URL, {
+            method: "POST",
+            mode: "no-cors", 
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                rank: tier.name,
+                winners: formattedWinners
+            })
+        }).then(() => {
+            console.log("Sent to Google Sheet successfully");
+        }).catch(err => {
+            console.error("Failed to send to Sheet", err);
+        });
+    }
 
     // 2. ส่งสัญญาณไป Firebase (State: WARPING)
     // ส่งข้อมูลผู้ชนะไปด้วยเลย แต่ยังไม่โชว์
@@ -556,6 +590,7 @@ function resetGame() {
         window.location.reload();
     }, 500);
 }
+
 
 
 
