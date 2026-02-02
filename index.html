@@ -7,6 +7,9 @@
 
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 </head>
 
 <body> 
@@ -24,17 +27,19 @@
                    value="https://docs.google.com/spreadsheets/d/e/2PACX-1vSOJsl1kh0r-xTWTqrXExZZfsuaZSiGUgGa9P8swt1NIIkULgR8mhbHedmDeZpq888KAZmqHAwVNXDY/pub?output=csv" 
                    placeholder="วางลิงก์ CSV ตรงนี้...">
             <br>
-            <button class="btn-wish" onclick="loadData()">Load Data</button>
+            <button class="btn-wish" onclick="loadData()">Load Data (Admin Only)</button>
         </div>
     </div>
 
     <div class="container" id="mainScreen" style="display:none;">
         <div id="bannerDisplay" class="banner-display"></div>
-        <div class="pool-count" id="poolCount">System Initializing...</div>
+        <div class="pool-count" id="poolCount">Waiting for Admin...</div>
         
-        <button class="btn-wish start-btn" onclick="startWish()">
-            ✦ START WISH ✦
-        </button>
+        <div id="adminControls" style="display:none;">
+            <button class="btn-wish start-btn" onclick="triggerWish()">
+                ✦ START WISH ✦
+            </button>
+        </div>
     </div>
 
     <div id="resultScreen">
@@ -46,9 +51,9 @@
             <div class="result-grid" id="resultGrid"></div>
         </div>
 
-        <div class="control-bar">
+        <div class="control-bar" id="resultControls" style="display:none;">
             <button class="btn-secondary" onclick="closeResult()">
-                ❮ ย้อนกลับ
+                ❮ ปิดหน้าต่างนี้
             </button>
             <button class="btn-wish" onclick="nextRound()">
                 รางวัลถัดไป ❯
